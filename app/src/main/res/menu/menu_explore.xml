@@ -8,16 +8,11 @@
         android:id="@+id/menu_action_search"
         android:icon="@drawable/ic_search_white_24dp"
         android:title="@string/action_search"
-        app:actionViewClass="android.support.v7.widget.SearchView"
+        app:actionViewClass="com.algolia.instantsearch.ui.views.SearchBox"
         app:showAsAction="always|collapseActionView" />
     <item
         android:id="@+id/menu_action_filter"
         android:icon="@drawable/ic_tune_white_24dp"
         android:title="@string/action_filter"
-        app:showAsAction="ifRoom" />
-    <item
-        android:id="@+id/menu_action_map"
-        android:icon="@drawable/ic_location_on_white_24dp"
-        android:title="@string/action_map"
         app:showAsAction="ifRoom" />
 </menu>

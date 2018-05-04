@@ -6,6 +6,10 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.design.widget.AppBarLayout;
 import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentStatePagerAdapter;
+import android.support.v4.view.PagerAdapter;
+import android.support.v4.view.ViewPager;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -13,17 +17,12 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
-import android.widget.Toast;
 
 import com.algolia.instantsearch.helpers.InstantSearch;
 import com.algolia.instantsearch.helpers.Searcher;
-import com.algolia.instantsearch.ui.views.Hits;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.SupportMapFragment;
-
-import org.greenrobot.eventbus.EventBus;
-import org.json.JSONException;
 
 import it.polito.mad.mad2018.data.Book;
 import it.polito.mad.mad2018.data.Constants;
@@ -32,11 +31,15 @@ import it.polito.mad.mad2018.widgets.MapWidget;
 public class ExploreFragment extends Fragment {
 
     private final static String MAP_FRAGMENT_TAG = "map_fragment";
-    private final static String MAP_IS_SHOWN_KEY = "map_shown";
 
     private Searcher searcher;
     private FilterResultsFragment filterResultsFragment;
+    private SearchResultsTextFragment searchResultsTextFragment;
+
     private MapWidget mapWidget;
+    private SupportMapFragment mapFragment;
+
+    private ViewPager mPager;
 
     private AppBarLayout appBarLayout;
     private View algoliaLogoLayout;
@@ -60,6 +63,8 @@ public class ExploreFragment extends Fragment {
         searcher = Searcher.create(Constants.ALGOLIA_APP_ID, Constants.ALGOLIA_SEARCH_API_KEY,
                 Constants.ALGOLIA_INDEX_NAME);
 
+        searchResultsTextFragment = SearchResultsTextFragment.newInstance(searcher);
+        mapFragment = SupportMapFragment.newInstance();
         filterResultsFragment = FilterResultsFragment.getInstance(searcher);
         filterResultsFragment.addSeekBar("bookConditions.value", "conditions", 10.0, 40.0, 3)
                 .addSeekBar("distance", 0.0, 1000000.0, 50);
@@ -69,10 +74,19 @@ public class ExploreFragment extends Fragment {
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         setHasOptionsMenu(true);
+
         View view = inflater.inflate(R.layout.fragment_explore, container, false);
         algoliaLogoLayout = inflater.inflate(R.layout.algolia_logo_layout, null);
 
-        setHitsOnClickListener(view);
+        this.mapWidget = new MapWidget(mapFragment, bookId -> {
+            Intent toBookInfo = new Intent(getActivity(), BookInfoActivity.class);
+            toBookInfo.putExtra(Book.BOOK_ID_KEY, bookId);
+            startActivity(toBookInfo);
+        });
+
+        mPager = view.findViewById(R.id.search_pager);
+        PagerAdapter mPagerAdapter = new SearchResultsPagerAdapter(getChildFragmentManager());
+        mPager.setAdapter(mPagerAdapter);
 
         return view;
     }
@@ -83,11 +97,6 @@ public class ExploreFragment extends Fragment {
 
         assert getActivity() != null;
         getActivity().setTitle(R.string.explore);
-
-        if (savedInstanceState != null &&
-                savedInstanceState.getBoolean(MAP_IS_SHOWN_KEY, false)) {
-            showMapFragment();
-        }
     }
 
     @Override
@@ -96,6 +105,15 @@ public class ExploreFragment extends Fragment {
 
         if (mGoogleApiClient != null) {
             mGoogleApiClient.connect();
+        }
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+
+        if (mGoogleApiClient != null) {
+            mGoogleApiClient.disconnect();
         }
     }
 
@@ -109,7 +127,6 @@ public class ExploreFragment extends Fragment {
 
     @Override
     public void onDestroy() {
-        EventBus.getDefault().unregister(this);
         searcher.destroy();
         super.onDestroy();
     }
@@ -119,7 +136,10 @@ public class ExploreFragment extends Fragment {
         menu.clear();
 
         assert getActivity() != null;
+
         inflater.inflate(R.menu.menu_explore, menu);
+        searcher.registerResultListener(mapWidget);
+
         InstantSearch helper = new InstantSearch(getActivity(), menu, R.id.menu_action_search, searcher);
         helper.search();
 
@@ -139,13 +159,6 @@ public class ExploreFragment extends Fragment {
             case R.id.menu_action_filter:
                 filterResultsFragment.show(getChildFragmentManager(), FilterResultsFragment.TAG);
                 return true;
-            case R.id.menu_action_map:
-                if (this.mapWidget == null) {
-                    showMapFragment();
-                } else {
-                    hideMapFragment();
-                }
-                return true;
             default:
                 return super.onOptionsItemSelected(item);
         }
@@ -154,26 +167,15 @@ public class ExploreFragment extends Fragment {
     @Override
     public void onSaveInstanceState(@NonNull Bundle outState) {
         super.onSaveInstanceState(outState);
-        outState.putBoolean(MAP_IS_SHOWN_KEY, mapWidget != null);
     }
 
-    private void setHitsOnClickListener(View view) {
-
-        final Hits hits = view.findViewById(R.id.algolia_hits);
-        hits.setOnItemClickListener((recyclerView, position, v) -> {
-
-            try {
-                String bookId = hits.get(position).getString(Book.ALGOLIA_BOOK_ID_KEY);
-                if (bookId != null) {
-                    Intent toBookInfo = new Intent(getActivity(), BookInfoActivity.class);
-                    toBookInfo.putExtra(Book.BOOK_ID_KEY, bookId);
-                    startActivity(toBookInfo);
-                    return;
-                }
-            } catch (JSONException e) { /* Do nothing */ }
-
-            Toast.makeText(getContext(), R.string.error_occurred, Toast.LENGTH_LONG).show();
-        });
+    public int onBackPressed() {
+        if (mPager.getCurrentItem() == 0) {
+            return 0;
+        } else {
+            mPager.setCurrentItem(0);
+            return 1;
+        }
     }
 
     private void setupGoogleAPI() {
@@ -183,41 +185,19 @@ public class ExploreFragment extends Fragment {
                 .build();
     }
 
-    private void showMapFragment() {
-        if (mapWidget != null) {
-            searcher.unregisterResultListener(mapWidget);
-            mapWidget = null;
+    private class SearchResultsPagerAdapter extends FragmentStatePagerAdapter {
+        SearchResultsPagerAdapter(FragmentManager fm) {
+            super(fm);
         }
 
-        final SupportMapFragment mapFragment = SupportMapFragment.newInstance();
-        assert getFragmentManager() != null;
-        assert getView() != null;
+        @Override
+        public Fragment getItem(int position) {
+            return (position == 0 ? searchResultsTextFragment : mapFragment);
+        }
 
-        getView().findViewById(R.id.map_placeholder).setVisibility(View.VISIBLE);
-        getFragmentManager().beginTransaction()
-                .replace(R.id.map_placeholder, mapFragment, MAP_FRAGMENT_TAG)
-                .commit();
-
-        this.mapWidget = new MapWidget(mapFragment, bookId -> {
-            Intent toBookInfo = new Intent(getActivity(), BookInfoActivity.class);
-            toBookInfo.putExtra(Book.BOOK_ID_KEY, bookId);
-            startActivity(toBookInfo);
-        });
-        searcher.registerResultListener(mapWidget);
-        searcher.search();
-    }
-
-    private void hideMapFragment() {
-        assert getFragmentManager() != null;
-        assert getView() != null;
-
-        getView().findViewById(R.id.map_placeholder).setVisibility(View.GONE);
-        Fragment mapFragment = getFragmentManager().findFragmentByTag(MAP_FRAGMENT_TAG);
-        getFragmentManager().beginTransaction()
-                .remove(mapFragment)
-                .commit();
-
-        searcher.unregisterResultListener(mapWidget);
-        mapWidget = null;
+        @Override
+        public int getCount() {
+            return 2;
+        }
     }
 }

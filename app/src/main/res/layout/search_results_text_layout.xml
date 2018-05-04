@@ -1,0 +1,8 @@
+<com.algolia.instantsearch.ui.views.Hits
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:algolia="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/algolia_hits"
+    android:layout_width="match_parent"
+    android:layout_height="0dp"
+    android:layout_weight="1"
+    algolia:itemLayout="@layout/item_book" />
