@@ -35,6 +35,7 @@ import com.google.firebase.database.ValueEventListener;
 
 import java.util.Arrays;
 
+import it.polito.mad.mad2018.chat.ChatFragment;
 import it.polito.mad.mad2018.data.UserProfile;
 import it.polito.mad.mad2018.explore.ExploreFragment;
 import it.polito.mad.mad2018.library.LibraryFragment;
@@ -133,6 +134,10 @@ public class MainActivity extends AppCompatActivityDialog<MainActivity.DialogID>
 
             case R.id.nav_profile:
                 this.replaceFragment(ShowProfileFragment.newInstance(UserProfile.localInstance, true));
+                break;
+
+            case R.id.nav_chat:
+                this.replaceFragment(ChatFragment.newInstance());
                 break;
 
             case R.id.nav_sign_out:

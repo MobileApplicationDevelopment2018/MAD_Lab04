@@ -157,4 +157,8 @@
     <string name="no_results_found">No results found</string>
     <string name="oops">Oops…</string>
     <string name="something_went_wrong">Something went wrong!</string>
+
+    <string name="active_chats">Active chats</string>
+    <string name="archived_chats">Archived chats</string>
+    <string name="chat">Chat</string>
 </resources>
