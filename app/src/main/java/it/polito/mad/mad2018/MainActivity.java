@@ -81,9 +81,9 @@ public class MainActivity extends AppCompatActivityDialog<MainActivity.DialogID>
             this.signIn();
         }
 
-        if (savedInstanceState == null) {
+        /*if (savedInstanceState == null) {
             showDefaultFragment();
-        }
+        }*/
     }
 
     @Override
@@ -270,7 +270,6 @@ public class MainActivity extends AppCompatActivityDialog<MainActivity.DialogID>
 
     private void onSignOut() {
         UserProfile.localInstance = null;
-        showDefaultFragment();
         signIn();
     }
 
@@ -299,6 +298,7 @@ public class MainActivity extends AppCompatActivityDialog<MainActivity.DialogID>
                 } else {
                     UserProfile.localInstance = new UserProfile(data, getResources());
                     updateNavigationView();
+                    showDefaultFragment();
                     showToast(getString(R.string.sign_in_welcome_back) + " " + UserProfile.localInstance.getUsername());
                 }
             }

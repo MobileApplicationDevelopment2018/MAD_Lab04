@@ -8,9 +8,7 @@ import android.support.design.widget.AppBarLayout;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentStatePagerAdapter;
-import android.support.v4.view.MenuItemCompat;
 import android.support.v4.view.ViewPager;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -22,6 +20,8 @@ import android.widget.ImageView;
 import com.algolia.instantsearch.helpers.InstantSearch;
 import com.algolia.instantsearch.helpers.Searcher;
 import com.algolia.instantsearch.ui.views.SearchBox;
+import com.algolia.search.saas.AbstractQuery;
+import com.algolia.search.saas.Query;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.SupportMapFragment;
@@ -31,6 +31,7 @@ import java.util.List;
 import it.polito.mad.mad2018.R;
 import it.polito.mad.mad2018.data.Book;
 import it.polito.mad.mad2018.data.Constants;
+import it.polito.mad.mad2018.data.UserProfile;
 import it.polito.mad.mad2018.library.BookInfoActivity;
 import it.polito.mad.mad2018.widgets.MapWidget;
 
@@ -64,6 +65,10 @@ public class ExploreFragment extends Fragment {
         if(savedInstanceState != null) {
             searchQuery = savedInstanceState.getString(SEARCH_QUERY_STRING);
         }
+
+        double[] position = UserProfile.localInstance.getCoordinates();
+        searcher.getQuery().setAroundLatLng(new AbstractQuery.LatLng(position[0], position[1]))
+                .setAroundRadius(Query.RADIUS_ALL);
 
         setupGoogleAPI();
 
