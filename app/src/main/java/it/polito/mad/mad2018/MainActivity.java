@@ -87,7 +87,7 @@ public class MainActivity extends AppCompatActivityDialog<MainActivity.DialogID>
                 setOnProfileLoadedListener();
             } else {
                 updateNavigationView();
-                showDefaultFragment();
+                //showDefaultFragment();
             }
         } else {
             signIn();
