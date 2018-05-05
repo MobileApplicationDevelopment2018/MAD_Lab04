@@ -36,7 +36,6 @@ public class ExploreFragment extends Fragment {
     private FilterResultsFragment filterResultsFragment;
     private SearchResultsTextFragment searchResultsTextFragment;
 
-    private MapWidget mapWidget;
     private SupportMapFragment mapFragment;
 
     private ViewPager mPager;
@@ -78,7 +77,7 @@ public class ExploreFragment extends Fragment {
         View view = inflater.inflate(R.layout.fragment_explore, container, false);
         algoliaLogoLayout = inflater.inflate(R.layout.algolia_logo_layout, null);
 
-        this.mapWidget = new MapWidget(mapFragment, bookId -> {
+        MapWidget mapWidget = new MapWidget(mapFragment, bookId -> {
             Intent toBookInfo = new Intent(getActivity(), BookInfoActivity.class);
             toBookInfo.putExtra(Book.BOOK_ID_KEY, bookId);
             startActivity(toBookInfo);
@@ -87,6 +86,8 @@ public class ExploreFragment extends Fragment {
         mPager = view.findViewById(R.id.search_pager);
         PagerAdapter mPagerAdapter = new SearchResultsPagerAdapter(getChildFragmentManager());
         mPager.setAdapter(mPagerAdapter);
+
+        searcher.registerResultListener(mapWidget);
 
         return view;
     }
@@ -138,9 +139,8 @@ public class ExploreFragment extends Fragment {
         assert getActivity() != null;
 
         inflater.inflate(R.menu.menu_explore, menu);
-        searcher.registerResultListener(mapWidget);
-
-        InstantSearch helper = new InstantSearch(getActivity(), menu, R.id.menu_action_search, searcher);
+        InstantSearch helper = new InstantSearch(searcher);
+        helper.registerSearchView(getActivity(), menu, R.id.menu_action_search);
         helper.search();
 
         MenuItem itemSearch = menu.findItem(R.id.menu_action_search);

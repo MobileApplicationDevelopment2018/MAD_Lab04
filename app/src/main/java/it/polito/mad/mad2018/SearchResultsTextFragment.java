@@ -18,6 +18,7 @@ import it.polito.mad.mad2018.data.Book;
 
 public class SearchResultsTextFragment extends Fragment {
     private Searcher searcher;
+    private Hits hits;
 
     public SearchResultsTextFragment() {
     }
@@ -41,16 +42,16 @@ public class SearchResultsTextFragment extends Fragment {
 
         View view = inflater.inflate(R.layout.search_results_text_layout, container, false);
 
-        setHitsOnClickListener(view);
-        final Hits hits = view.findViewById(R.id.algolia_hits);
-        //searcher.registerResultListener(hits);
+        hits = view.findViewById(R.id.algolia_hits);
+        setHitsOnClickListener(hits);
+        hits.initWithSearcher(searcher);
+        searcher.registerResultListener(hits);
 
         return view;
     }
 
-    private void setHitsOnClickListener(View view) {
+    private void setHitsOnClickListener(Hits hits) {
 
-        final Hits hits = view.findViewById(R.id.algolia_hits);
         hits.setOnItemClickListener((recyclerView, position, v) -> {
 
             try {
@@ -65,5 +66,9 @@ public class SearchResultsTextFragment extends Fragment {
 
             Toast.makeText(getContext(), R.string.error_occurred, Toast.LENGTH_LONG).show();
         });
+    }
+
+    public Hits getHits() {
+        return hits;
     }
 }
