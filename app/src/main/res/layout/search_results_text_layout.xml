@@ -3,6 +3,5 @@
     xmlns:algolia="http://schemas.android.com/apk/res-auto"
     android:id="@+id/algolia_hits"
     android:layout_width="match_parent"
-    android:layout_height="0dp"
-    android:layout_weight="1"
+    android:layout_height="match_parent"
     algolia:itemLayout="@layout/item_book" />

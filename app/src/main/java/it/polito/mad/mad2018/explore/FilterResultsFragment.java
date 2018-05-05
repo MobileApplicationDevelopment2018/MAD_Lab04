@@ -1,4 +1,4 @@
-package it.polito.mad.mad2018;
+package it.polito.mad.mad2018.explore;
 
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -26,11 +26,15 @@ import com.algolia.search.saas.Query;
 import java.util.ArrayList;
 import java.util.List;
 
+import it.polito.mad.mad2018.R;
 import it.polito.mad.mad2018.data.Book;
 import it.polito.mad.mad2018.data.UserProfile;
 
 public class FilterResultsFragment extends DialogFragment {
     public static final String TAG = "FilterResultsFragment";
+
+    static final String CONDITIONS_NAME = "conditions";
+    static final String DISTANCE_NAME = "distance";
 
     private Searcher searcher;
 
@@ -48,8 +52,8 @@ public class FilterResultsFragment extends DialogFragment {
         final FilterResultsFragment fragment = new FilterResultsFragment();
         fragment.searcher = searcher; //storing the searcher for method calls before onCreateDialog, like addSeekBar
         Bundle args = new Bundle();
-        args.putInt("conditions", 0);
-        args.putInt("distance", 1000000);
+        args.putInt(CONDITIONS_NAME, 0);
+        args.putInt(DISTANCE_NAME, 1000000);
         fragment.setArguments(args);
         return fragment;
     }
@@ -89,7 +93,7 @@ public class FilterResultsFragment extends DialogFragment {
                         SeekBarDescription seekBarDescription = (SeekBarDescription)filter;
                         if(filter.attribute != null) {
                             searcher.addNumericRefinement(new NumericRefinement(seekBarDescription.attribute, NumericRefinement.OPERATOR_GE, seekBarDescription.value));
-                        } else if (filter.name.equals("distance")) {
+                        } else if (filter.name.equals(DISTANCE_NAME)) {
                             double[] position = UserProfile.localInstance.getCoordinates();
                             Query query = searcher.getQuery().setAroundLatLng(new AbstractQuery.LatLng(position[0], position[1]));
                             if (filter.value < ((SeekBarDescription) filter).max) {
@@ -236,13 +240,13 @@ public class FilterResultsFragment extends DialogFragment {
     private void updateSeekBarText(final TextView textView, final String name, final double value, final double minValue, final double maxValue) {
         String text = "";
 
-        if (name.equals("conditions")) {
+        if (name.equals(CONDITIONS_NAME)) {
             if(value == minValue) {
                 text = getString(R.string.book_condition_any);
             } else {
                 text = getString(R.string.conditions_filter, getResources().getString(Book.BookConditions.getStringId((int) value)).toLowerCase());
             }
-        } else if (name.equals("distance")) {
+        } else if (name.equals(DISTANCE_NAME)) {
             if(value == maxValue) {
                 text = getString(R.string.no_distance_filter);
             } else {
@@ -270,7 +274,7 @@ public class FilterResultsFragment extends DialogFragment {
             this.position = position;
         }
 
-        protected void create() {
+        void create() {
             createFilter(this);
         }
     }

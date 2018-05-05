@@ -1,4 +1,4 @@
-package it.polito.mad.mad2018;
+package it.polito.mad.mad2018.explore;
 
 import android.content.Intent;
 import android.os.Bundle;
@@ -14,23 +14,18 @@ import com.algolia.instantsearch.ui.views.Hits;
 
 import org.json.JSONException;
 
+import it.polito.mad.mad2018.R;
 import it.polito.mad.mad2018.data.Book;
+import it.polito.mad.mad2018.library.BookInfoActivity;
 
 public class SearchResultsTextFragment extends Fragment {
+
     private Searcher searcher;
 
-    public SearchResultsTextFragment() {
-    }
+    public SearchResultsTextFragment() { /* Required empty public constructor */ }
 
-    public static SearchResultsTextFragment newInstance(Searcher searcher) {
-
-        Bundle args = new Bundle();
-
-        SearchResultsTextFragment fragment = new SearchResultsTextFragment();
-        fragment.setArguments(args);
-        fragment.searcher = searcher;
-
-        return fragment;
+    public static SearchResultsTextFragment newInstance() {
+        return new SearchResultsTextFragment();
     }
 
     @Override
@@ -41,12 +36,18 @@ public class SearchResultsTextFragment extends Fragment {
 
         View view = inflater.inflate(R.layout.search_results_text_layout, container, false);
 
-        Hits hits = view.findViewById(R.id.algolia_hits);
-        setHitsOnClickListener(hits);
-        hits.initWithSearcher(searcher);
-        searcher.registerResultListener(hits);
+        if (searcher != null) {
+            Hits hits = view.findViewById(R.id.algolia_hits);
+            setHitsOnClickListener(hits);
+            hits.initWithSearcher(searcher);
+            searcher.registerResultListener(hits);
+        }
 
         return view;
+    }
+
+    public void setSearcher(@NonNull Searcher searcher) {
+        this.searcher = searcher;
     }
 
     private void setHitsOnClickListener(Hits hits) {

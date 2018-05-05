@@ -49,6 +49,7 @@ public class Book implements Serializable {
     public static final String ALGOLIA_OWNER_ID_KEY = "ownerID";
     public static final String ALGOLIA_BOOK_TITLE_KEY = "title";
     public static final String ALGOLIA_HAS_IMAGE_KEY = "hasImage";
+    public static final String ALGOLIA_CONDITIONS_KEY = "bookConditions.value";
     public static final String ALGOLIA_GEOLOC_KEY = "_geoloc";
     public static final String ALGOLIA_GEOLOC_LAT_KEY = "lat";
     public static final String ALGOLIA_GEOLOC_LON_KEY = "lon";
@@ -381,7 +382,7 @@ public class Book implements Serializable {
 
     /* Fields need to be public to enable Firebase to access them */
     @SuppressWarnings({"WeakerAccess", "CanBeFinal"})
-    public static final class BookConditions implements Serializable {
+    public static final class BookConditions implements Serializable, Comparable<BookConditions> {
         private static final int MINT = 40;
         private static final int GOOD = 30;
         private static final int FAIR = 20;
@@ -424,6 +425,23 @@ public class Book implements Serializable {
         @Override
         public String toString() {
             return MAD2018Application.applicationContext.getString(getStringId(this.value));
+        }
+
+        @Override
+        public boolean equals(Object other) {
+            return this == other ||
+                    other instanceof BookConditions
+                            && this.value == ((BookConditions) other).value;
+        }
+
+        @Override
+        public int hashCode() {
+            return Integer.valueOf(value).hashCode();
+        }
+
+        @Override
+        public int compareTo(@NonNull BookConditions other) {
+            return Integer.compare(this.value, other.value);
         }
 
         @Retention(RetentionPolicy.SOURCE)

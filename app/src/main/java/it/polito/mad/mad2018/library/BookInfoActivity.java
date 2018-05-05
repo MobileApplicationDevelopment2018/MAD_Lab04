@@ -1,4 +1,4 @@
-package it.polito.mad.mad2018;
+package it.polito.mad.mad2018.library;
 
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
@@ -10,9 +10,10 @@ import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.ValueEventListener;
 
+import it.polito.mad.mad2018.R;
 import it.polito.mad.mad2018.data.Book;
 import it.polito.mad.mad2018.data.UserProfile;
-import it.polito.mad.mad2018.library.MyBooksFragment;
+import it.polito.mad.mad2018.profile.ShowProfileFragment;
 
 public class BookInfoActivity extends AppCompatActivity
         implements ShowProfileFragment.OnShowOwnedBooksClickListener {

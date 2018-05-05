@@ -1,4 +1,4 @@
-package it.polito.mad.mad2018;
+package it.polito.mad.mad2018.library;
 
 import android.app.AlertDialog;
 import android.app.Dialog;
@@ -22,8 +22,10 @@ import com.google.firebase.database.ValueEventListener;
 
 import java.util.List;
 
+import it.polito.mad.mad2018.R;
 import it.polito.mad.mad2018.data.Book;
 import it.polito.mad.mad2018.data.UserProfile;
+import it.polito.mad.mad2018.profile.ShowProfileFragment;
 import it.polito.mad.mad2018.utils.FragmentDialog;
 import it.polito.mad.mad2018.utils.GlideApp;
 import it.polito.mad.mad2018.utils.GlideRequest;

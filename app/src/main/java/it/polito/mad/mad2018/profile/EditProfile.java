@@ -1,4 +1,4 @@
-package it.polito.mad.mad2018;
+package it.polito.mad.mad2018.profile;
 
 import android.Manifest;
 import android.app.Dialog;
@@ -42,6 +42,9 @@ import com.google.android.gms.tasks.OnSuccessListener;
 
 import java.io.File;
 
+import it.polito.mad.mad2018.BuildConfig;
+import it.polito.mad.mad2018.MainActivity;
+import it.polito.mad.mad2018.R;
 import it.polito.mad.mad2018.data.UserProfile;
 import it.polito.mad.mad2018.utils.AppCompatActivityDialog;
 import it.polito.mad.mad2018.utils.FileUtilities;

@@ -1,4 +1,4 @@
-package it.polito.mad.mad2018;
+package it.polito.mad.mad2018.profile;
 
 import android.content.Context;
 import android.content.Intent;
@@ -23,6 +23,7 @@ import com.bumptech.glide.signature.ObjectKey;
 
 import java.util.Locale;
 
+import it.polito.mad.mad2018.R;
 import it.polito.mad.mad2018.data.UserProfile;
 import it.polito.mad.mad2018.utils.GlideApp;
 import it.polito.mad.mad2018.utils.GlideRequest;

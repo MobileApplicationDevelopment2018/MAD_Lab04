@@ -1,4 +1,4 @@
-package it.polito.mad.mad2018;
+package it.polito.mad.mad2018.explore;
 
 import android.content.Intent;
 import android.os.Bundle;
@@ -8,7 +8,6 @@ import android.support.design.widget.AppBarLayout;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentStatePagerAdapter;
-import android.support.v4.view.PagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -24,31 +23,32 @@ import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.SupportMapFragment;
 
+import java.util.List;
+
+import it.polito.mad.mad2018.R;
 import it.polito.mad.mad2018.data.Book;
 import it.polito.mad.mad2018.data.Constants;
+import it.polito.mad.mad2018.library.BookInfoActivity;
 import it.polito.mad.mad2018.widgets.MapWidget;
 
 public class ExploreFragment extends Fragment {
 
-    private Searcher searcher;
+    private final Searcher searcher;
     private FilterResultsFragment filterResultsFragment;
-    private SearchResultsTextFragment searchResultsTextFragment;
 
-    private SupportMapFragment mapFragment;
-
-    private ViewPager mPager;
+    private ViewPager pager;
 
     private AppBarLayout appBarLayout;
     private View algoliaLogoLayout;
     private GoogleApiClient mGoogleApiClient;
 
-    public ExploreFragment() { /* Required empty public constructor */ }
+    public ExploreFragment() {
+        searcher = Searcher.create(Constants.ALGOLIA_APP_ID, Constants.ALGOLIA_SEARCH_API_KEY,
+                Constants.ALGOLIA_INDEX_NAME);
+    }
 
     public static ExploreFragment newInstance() {
-        ExploreFragment fragment = new ExploreFragment();
-        Bundle args = new Bundle();
-        fragment.setArguments(args);
-        return fragment;
+        return new ExploreFragment();
     }
 
     @Override
@@ -57,14 +57,16 @@ public class ExploreFragment extends Fragment {
 
         setupGoogleAPI();
 
-        searcher = Searcher.create(Constants.ALGOLIA_APP_ID, Constants.ALGOLIA_SEARCH_API_KEY,
-                Constants.ALGOLIA_INDEX_NAME);
-
-        searchResultsTextFragment = SearchResultsTextFragment.newInstance(searcher);
-        mapFragment = SupportMapFragment.newInstance();
         filterResultsFragment = FilterResultsFragment.getInstance(searcher);
-        filterResultsFragment.addSeekBar("bookConditions.value", "conditions", 10.0, 40.0, 3)
-                .addSeekBar("distance", 0.0, 1000000.0, 50);
+        List<Book.BookConditions> bookConditions = Book.BookConditions.values();
+        filterResultsFragment
+                .addSeekBar(Book.ALGOLIA_CONDITIONS_KEY,
+                        FilterResultsFragment.CONDITIONS_NAME,
+                        (double) bookConditions.get(0).value,
+                        (double) bookConditions.get(bookConditions.size() - 1).value,
+                        bookConditions.size() - 1)
+                .addSeekBar(FilterResultsFragment.DISTANCE_NAME,
+                        0.0, 1000000.0, 50);
     }
 
     @Override
@@ -75,19 +77,31 @@ public class ExploreFragment extends Fragment {
         View view = inflater.inflate(R.layout.fragment_explore, container, false);
         algoliaLogoLayout = inflater.inflate(R.layout.algolia_logo_layout, null);
 
-        MapWidget mapWidget = new MapWidget(mapFragment, bookId -> {
-            Intent toBookInfo = new Intent(getActivity(), BookInfoActivity.class);
-            toBookInfo.putExtra(Book.BOOK_ID_KEY, bookId);
-            startActivity(toBookInfo);
-        });
-
-        mPager = view.findViewById(R.id.search_pager);
-        PagerAdapter mPagerAdapter = new SearchResultsPagerAdapter(getChildFragmentManager());
-        mPager.setAdapter(mPagerAdapter);
-
-        searcher.registerResultListener(mapWidget);
+        pager = view.findViewById(R.id.search_pager);
+        SearchResultsPagerAdapter pagerAdapter = new SearchResultsPagerAdapter(getChildFragmentManager());
+        pager.setAdapter(pagerAdapter);
 
         return view;
+    }
+
+    @Override
+    public void onAttachFragment(Fragment childFragment) {
+        super.onAttachFragment(childFragment);
+
+        if (childFragment instanceof SearchResultsTextFragment) {
+            SearchResultsTextFragment instance = (SearchResultsTextFragment) childFragment;
+            instance.setSearcher(searcher);
+        }
+
+        if (childFragment instanceof SupportMapFragment) {
+            SupportMapFragment instance = (SupportMapFragment) childFragment;
+            MapWidget mapWidget = new MapWidget(instance, bookId -> {
+                Intent toBookInfo = new Intent(getActivity(), BookInfoActivity.class);
+                toBookInfo.putExtra(Book.BOOK_ID_KEY, bookId);
+                startActivity(toBookInfo);
+            });
+            searcher.registerResultListener(mapWidget);
+        }
     }
 
     @Override
@@ -162,16 +176,11 @@ public class ExploreFragment extends Fragment {
         }
     }
 
-    @Override
-    public void onSaveInstanceState(@NonNull Bundle outState) {
-        super.onSaveInstanceState(outState);
-    }
-
     public int onBackPressed() {
-        if (mPager.getCurrentItem() == 0) {
+        if (pager.getCurrentItem() == 0) {
             return 0;
         } else {
-            mPager.setCurrentItem(0);
+            pager.setCurrentItem(0);
             return 1;
         }
     }
@@ -184,13 +193,15 @@ public class ExploreFragment extends Fragment {
     }
 
     private class SearchResultsPagerAdapter extends FragmentStatePagerAdapter {
-        SearchResultsPagerAdapter(FragmentManager fm) {
-            super(fm);
+        SearchResultsPagerAdapter(FragmentManager fragmentManager) {
+            super(fragmentManager);
         }
 
         @Override
         public Fragment getItem(int position) {
-            return (position == 0 ? searchResultsTextFragment : mapFragment);
+            return (position == 0
+                    ? SearchResultsTextFragment.newInstance()
+                    : SupportMapFragment.newInstance());
         }
 
         @Override

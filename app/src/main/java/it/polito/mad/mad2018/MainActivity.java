@@ -27,7 +27,6 @@ import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions;
 import com.bumptech.glide.request.RequestOptions;
 import com.bumptech.glide.signature.ObjectKey;
 import com.firebase.ui.auth.AuthUI;
-import com.firebase.ui.auth.ErrorCodes;
 import com.firebase.ui.auth.IdpResponse;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DataSnapshot;
@@ -37,7 +36,10 @@ import com.google.firebase.database.ValueEventListener;
 import java.util.Arrays;
 
 import it.polito.mad.mad2018.data.UserProfile;
+import it.polito.mad.mad2018.explore.ExploreFragment;
 import it.polito.mad.mad2018.library.LibraryFragment;
+import it.polito.mad.mad2018.profile.EditProfile;
+import it.polito.mad.mad2018.profile.ShowProfileFragment;
 import it.polito.mad.mad2018.utils.AppCompatActivityDialog;
 import it.polito.mad.mad2018.utils.GlideApp;
 import it.polito.mad.mad2018.utils.GlideRequest;
@@ -111,7 +113,7 @@ public class MainActivity extends AppCompatActivityDialog<MainActivity.DialogID>
             drawer.closeDrawer(GravityCompat.START);
         } else {
             Fragment fragment = getSupportFragmentManager().findFragmentByTag("main_fragment");
-            if(fragment instanceof  ExploreFragment) {
+            if (fragment instanceof ExploreFragment) {
                 if (((ExploreFragment)fragment).onBackPressed() == 0) {
                     super.onBackPressed();
                 }

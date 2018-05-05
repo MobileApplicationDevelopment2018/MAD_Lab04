@@ -15,8 +15,6 @@ import android.view.ViewGroup;
 import com.firebase.ui.database.FirebaseRecyclerAdapter;
 import com.firebase.ui.database.FirebaseRecyclerOptions;
 
-import it.polito.mad.mad2018.BookInfoActivity;
-import it.polito.mad.mad2018.BookInfoFragment;
 import it.polito.mad.mad2018.R;
 import it.polito.mad.mad2018.data.Book;
 import it.polito.mad.mad2018.data.UserProfile;
