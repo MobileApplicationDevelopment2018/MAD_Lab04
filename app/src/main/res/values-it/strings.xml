@@ -140,4 +140,7 @@
     <string name="no_internet_connection">Nessuna connessione ad Internet</string>
     <string name="internet_needed">E\' necessaria una connessione ad Internet attiva per utilizzare questa applicazione</string>
     <string name="exit">Esci</string>
+    <string name="no_results_found">Nessun risultato trovato</string>
+    <string name="oops">Oops…</string>
+    <string name="something_went_wrong">Qualcosa e\' andato storto!</string>
 </resources>

@@ -75,11 +75,6 @@ public class MainActivity extends AppCompatActivityDialog<MainActivity.DialogID>
 
         NavigationView navigationView = findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
-
-        // User not signed-in
-        if (firebaseAuth.getCurrentUser() == null) {
-            this.signIn();
-        }
     }
 
     @Override
@@ -93,6 +88,8 @@ public class MainActivity extends AppCompatActivityDialog<MainActivity.DialogID>
                 updateNavigationView();
                 showDefaultFragment();
             }
+        } else {
+            signIn();
         }
     }
 
