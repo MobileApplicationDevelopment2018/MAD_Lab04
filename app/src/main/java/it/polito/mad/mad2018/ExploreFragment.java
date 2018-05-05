@@ -30,8 +30,6 @@ import it.polito.mad.mad2018.widgets.MapWidget;
 
 public class ExploreFragment extends Fragment {
 
-    private final static String MAP_FRAGMENT_TAG = "map_fragment";
-
     private Searcher searcher;
     private FilterResultsFragment filterResultsFragment;
     private SearchResultsTextFragment searchResultsTextFragment;
