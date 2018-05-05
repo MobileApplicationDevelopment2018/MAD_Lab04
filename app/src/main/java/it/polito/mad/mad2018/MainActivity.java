@@ -80,10 +80,6 @@ public class MainActivity extends AppCompatActivityDialog<MainActivity.DialogID>
         if (firebaseAuth.getCurrentUser() == null) {
             this.signIn();
         }
-
-        /*if (savedInstanceState == null) {
-            showDefaultFragment();
-        }*/
     }
 
     @Override
@@ -95,6 +91,7 @@ public class MainActivity extends AppCompatActivityDialog<MainActivity.DialogID>
                 setOnProfileLoadedListener();
             } else {
                 updateNavigationView();
+                showDefaultFragment();
             }
         }
     }
