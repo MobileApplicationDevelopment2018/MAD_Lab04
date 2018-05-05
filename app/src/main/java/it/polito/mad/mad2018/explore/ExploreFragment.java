@@ -8,7 +8,9 @@ import android.support.design.widget.AppBarLayout;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentStatePagerAdapter;
+import android.support.v4.view.MenuItemCompat;
 import android.support.v4.view.ViewPager;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -19,6 +21,7 @@ import android.widget.ImageView;
 
 import com.algolia.instantsearch.helpers.InstantSearch;
 import com.algolia.instantsearch.helpers.Searcher;
+import com.algolia.instantsearch.ui.views.SearchBox;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.SupportMapFragment;
@@ -42,6 +45,9 @@ public class ExploreFragment extends Fragment {
     private View algoliaLogoLayout;
     private GoogleApiClient mGoogleApiClient;
 
+    private String searchQuery;
+    private final static String SEARCH_QUERY_STRING = "searchQuery";
+
     public ExploreFragment() {
         searcher = Searcher.create(Constants.ALGOLIA_APP_ID, Constants.ALGOLIA_SEARCH_API_KEY,
                 Constants.ALGOLIA_INDEX_NAME);
@@ -54,6 +60,10 @@ public class ExploreFragment extends Fragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        if(savedInstanceState != null) {
+            searchQuery = savedInstanceState.getString(SEARCH_QUERY_STRING);
+        }
 
         setupGoogleAPI();
 
@@ -153,11 +163,35 @@ public class ExploreFragment extends Fragment {
         inflater.inflate(R.menu.menu_explore, menu);
         InstantSearch helper = new InstantSearch(searcher);
         helper.registerSearchView(getActivity(), menu, R.id.menu_action_search);
-        helper.search();
+        if(searchQuery != null) {
+            helper.search(searchQuery);
+        } else {
+            helper.search();
+        }
 
         MenuItem itemSearch = menu.findItem(R.id.menu_action_search);
         ImageView algoliaLogo = algoliaLogoLayout.findViewById(R.id.algolia_logo);
         algoliaLogo.setOnClickListener(v -> itemSearch.expandActionView());
+
+        final SearchBox searchBox = (SearchBox) itemSearch.getActionView();
+        itemSearch.setOnActionExpandListener(new MenuItem.OnActionExpandListener() {
+
+            @Override
+            public boolean onMenuItemActionExpand(MenuItem item) {
+                if(searchQuery != null) {
+                    searchBox.post(() -> searchBox.setQuery(searchQuery, false));
+                }
+                helper.setSearchOnEmptyString(true);
+                return true;
+            }
+
+            @Override
+            public boolean onMenuItemActionCollapse(MenuItem item) {
+                searchQuery = searchBox.getQuery().toString();
+                helper.setSearchOnEmptyString(false);
+                return true;
+            }
+        });
 
         appBarLayout = getActivity().findViewById(R.id.app_bar_layout);
         appBarLayout.addView(algoliaLogoLayout);
@@ -174,6 +208,12 @@ public class ExploreFragment extends Fragment {
             default:
                 return super.onOptionsItemSelected(item);
         }
+    }
+
+    @Override
+    public void onSaveInstanceState(@NonNull Bundle outState) {
+        super.onSaveInstanceState(outState);
+        outState.putString(SEARCH_QUERY_STRING, searchQuery);
     }
 
     public int onBackPressed() {
