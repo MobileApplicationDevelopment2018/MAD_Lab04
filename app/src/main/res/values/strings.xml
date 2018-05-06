@@ -161,4 +161,6 @@
     <string name="active_chats">Active chats</string>
     <string name="archived_chats">Archived chats</string>
     <string name="chat">Chat</string>
+    <string name="no_active_chats">No active chats yet</string>
+    <string name="no_archived_chats">No archived chats yet</string>
 </resources>

@@ -5,9 +5,19 @@
     android:layout_height="match_parent"
     tools:context=".chat.ArchivedChatsFragment">
 
-    <TextView
+    <android.support.v7.widget.RecyclerView
+        android:id="@+id/ac_recycler_view"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:text="Here we will put all the archived chats for the user" />
+        android:padding="8dp"
+        android:visibility="gone" />
+
+    <TextView
+        android:id="@+id/ac_no_active_chats"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center"
+        android:text="@string/no_archived_chats"
+        android:textAppearance="@style/TextAppearance.AppCompat.Display1" />
 
 </FrameLayout>
