@@ -53,6 +53,8 @@ public class MainActivity extends AppCompatActivityDialog<MainActivity.DialogID>
     private static final int RC_EDIT_PROFILE = 5;
     private static final int RC_EDIT_PROFILE_WELCOME = 6;
 
+    private static final String FRAGMENT_TAG = "main_fragment";
+
     private FirebaseAuth firebaseAuth;
     private ValueEventListener profileListener;
 
@@ -86,8 +88,11 @@ public class MainActivity extends AppCompatActivityDialog<MainActivity.DialogID>
             if (UserProfile.localInstance == null) {
                 setOnProfileLoadedListener();
             } else {
+                findViewById(R.id.main_loading).setVisibility(View.GONE);
                 updateNavigationView();
-                //showDefaultFragment();
+                if (getCurrentFragment() == null) {
+                    showDefaultFragment();
+                }
             }
         } else {
             signIn();
@@ -107,9 +112,9 @@ public class MainActivity extends AppCompatActivityDialog<MainActivity.DialogID>
         if (drawer.isDrawerOpen(GravityCompat.START)) {
             drawer.closeDrawer(GravityCompat.START);
         } else {
-            Fragment fragment = getSupportFragmentManager().findFragmentByTag("main_fragment");
+            Fragment fragment = getSupportFragmentManager().findFragmentByTag(FRAGMENT_TAG);
             if (fragment instanceof ExploreFragment) {
-                if (((ExploreFragment)fragment).onBackPressed() == 0) {
+                if (((ExploreFragment) fragment).onBackPressed() == 0) {
                     super.onBackPressed();
                 }
             } else {
@@ -269,6 +274,7 @@ public class MainActivity extends AppCompatActivityDialog<MainActivity.DialogID>
 
     private void onSignOut() {
         UserProfile.localInstance = null;
+        removeCurrentFragment();
         signIn();
     }
 
@@ -335,27 +341,44 @@ public class MainActivity extends AppCompatActivityDialog<MainActivity.DialogID>
         updateNavigationView();
     }
 
+    private Fragment getCurrentFragment() {
+        return getSupportFragmentManager()
+                .findFragmentByTag(FRAGMENT_TAG);
+    }
+
     private void replaceFragment(@NonNull Fragment instance) {
         replaceFragment(instance, false);
     }
 
     private void replaceFragment(@NonNull Fragment instance, boolean force) {
 
-        final String fragmentTag = "main_fragment";
-        Fragment oldInstance = getSupportFragmentManager()
-                .findFragmentByTag(fragmentTag);
+        Fragment oldInstance = getCurrentFragment();
 
         if (force || oldInstance == null || !oldInstance.getClass().equals(instance.getClass())) {
             getSupportFragmentManager()
                     .beginTransaction()
-                    .replace(R.id.content_frame, instance, fragmentTag)
+                    .replace(R.id.content_frame, instance, FRAGMENT_TAG)
                     .commit();
 
             hideSoftKeyboard();
         }
     }
 
+    private void removeCurrentFragment() {
+
+        findViewById(R.id.main_loading).setVisibility(View.VISIBLE);
+        Fragment instance = getCurrentFragment();
+
+        if (instance != null) {
+            getSupportFragmentManager()
+                    .beginTransaction()
+                    .remove(instance)
+                    .commit();
+        }
+    }
+
     private void showDefaultFragment() {
+        findViewById(R.id.main_loading).setVisibility(View.GONE);
         NavigationView drawer = findViewById(R.id.nav_view);
         drawer.getMenu().findItem(R.id.nav_explore).setChecked(true);
         replaceFragment(ExploreFragment.newInstance());

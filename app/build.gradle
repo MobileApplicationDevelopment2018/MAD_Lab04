@@ -74,7 +74,6 @@ dependencies {
     implementation 'me.gujun.android.taggroup:library:1.4@aar'
     implementation 'com.rm:longpresspopup:1.0.1'
 
-    implementation 'com.android.support:support-v4:27.1.1'
     annotationProcessor 'com.github.bumptech.glide:compiler:4.6.1'
     testImplementation 'junit:junit:4.12'
     androidTestImplementation 'com.android.support.test:runner:1.0.2'
