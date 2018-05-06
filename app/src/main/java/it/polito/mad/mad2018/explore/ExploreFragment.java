@@ -9,6 +9,7 @@ import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentStatePagerAdapter;
 import android.support.v4.view.ViewPager;
+import android.support.v7.widget.Toolbar;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -36,6 +37,12 @@ import it.polito.mad.mad2018.library.BookInfoActivity;
 import it.polito.mad.mad2018.widgets.MapWidget;
 
 public class ExploreFragment extends Fragment {
+    private final static String MAP_FRAGMENT_TAG = "map_fragment";
+    private final static String MAP_IS_SHOWN_KEY = "map_shown";
+    private final static int LIST_ID = 0;
+    private final static int MAP_ID = 1;
+
+    private boolean isMapShown = false;
 
     private final Searcher searcher;
     private FilterResultsFragment filterResultsFragment;
@@ -210,6 +217,18 @@ public class ExploreFragment extends Fragment {
             case R.id.menu_action_filter:
                 filterResultsFragment.show(getChildFragmentManager(), FilterResultsFragment.TAG);
                 return true;
+            case R.id.menu_action_map:
+                if (!isMapShown) {
+                    isMapShown = showMap();
+                    Toolbar toolbar = (Toolbar) getActivity().findViewById(R.id.toolbar);
+                    toolbar.getMenu().findItem(R.id.menu_action_map).setIcon(R.drawable.ic_format_list_bulleted_white_24dp);
+                } else {
+                    isMapShown = hideMap();
+                    Toolbar toolbar = (Toolbar) getActivity().findViewById(R.id.toolbar);
+                    toolbar.getMenu().findItem(R.id.menu_action_map).setIcon(R.drawable.ic_location_on_white_24dp);
+                }
+
+                return true;
             default:
                 return super.onOptionsItemSelected(item);
         }
@@ -253,5 +272,23 @@ public class ExploreFragment extends Fragment {
         public int getCount() {
             return 2;
         }
+    }
+
+    private boolean showMap() {
+        final SupportMapFragment mapFragment = SupportMapFragment.newInstance();
+        MapWidget mapWidget = new MapWidget(mapFragment, bookId -> {
+            Intent toBookInfo = new Intent(getActivity(), BookInfoActivity.class);
+            toBookInfo.putExtra(Book.BOOK_ID_KEY, bookId);
+            startActivity(toBookInfo);
+        });
+        searcher.registerResultListener(mapWidget);
+        pager.setCurrentItem(MAP_ID);
+
+        return true;
+    }
+
+    private boolean hideMap() {
+        pager.setCurrentItem(LIST_ID);
+        return false;
     }
 }
