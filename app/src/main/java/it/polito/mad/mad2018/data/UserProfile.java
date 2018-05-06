@@ -41,6 +41,9 @@ public class UserProfile implements Serializable {
     private static final String FIREBASE_USERS_KEY = "users";
     private static final String FIREBASE_BOOKS_KEY = "books";
     private static final String FIREBASE_OWNED_BOOKS_KEY = "ownedBooks";
+    private static final String FIREBASE_CONVERSATIONS_KEY = "conversations";
+    private static final String FIREBASE_ACTIVE_CONVERSATIONS_KEY = "active";
+    private static final String FIREBASE_ARCHIVED_CONVERSATIONS_KEY = "archived";
 
     private static final String FIREBASE_PROFILE_KEY = "profile";
     private static final String FIREBASE_STORAGE_USERS_FOLDER = "users";
@@ -144,6 +147,23 @@ public class UserProfile implements Serializable {
                 .child(userId)
                 .child(FIREBASE_BOOKS_KEY)
                 .child(FIREBASE_OWNED_BOOKS_KEY);
+    }
+
+    private static DatabaseReference getConversationsReference() {
+        return FirebaseDatabase.getInstance().getReference()
+                .child(FIREBASE_USERS_KEY)
+                .child(UserProfile.getCurrentUserId())
+                .child(FIREBASE_CONVERSATIONS_KEY);
+    }
+
+    static DatabaseReference getActiveConversationsReference() {
+        return UserProfile.getConversationsReference()
+                .child(FIREBASE_ACTIVE_CONVERSATIONS_KEY);
+    }
+
+    static DatabaseReference getArchivedConversationsReference() {
+        return UserProfile.getConversationsReference()
+                .child(FIREBASE_ARCHIVED_CONVERSATIONS_KEY);
     }
 
     static StorageReference getStorageFolderReference(@NonNull String userId) {
@@ -355,7 +375,6 @@ public class UserProfile implements Serializable {
                 .removeValue();
     }
 
-
     public void updateAlgoliaGeoLoc(UserProfile other, @NonNull CompletionHandler completionHandler) {
 
         if ((other != null && Utilities.equals(this.data.profile.location, other.data.profile.location)) ||
@@ -379,6 +398,38 @@ public class UserProfile implements Serializable {
                 .partialUpdateObjectsAsync(new JSONArray(bookUpdates), completionHandler);
     }
 
+    Task<?> addConversation(@NonNull String conversationId) {
+        this.data.conversations.active.put(conversationId, 0);
+        return UserProfile.getActiveConversationsReference()
+                .child(conversationId)
+                .setValue(0);
+    }
+
+    int getUnreadMessagesCount(@NonNull String conversationId) {
+        Integer unread = this.data.conversations.active.get(conversationId);
+        if (unread == null) {
+            unread = this.data.conversations.archived.get(conversationId);
+        }
+        return unread == null ? 0 : unread;
+    }
+
+    void setMessagesAllRead(@NonNull String conversationId) {
+        if (this.data.conversations.active.containsKey(conversationId)) {
+            this.data.conversations.active.put(conversationId, 0);
+            UserProfile.getActiveConversationsReference()
+                    .child(conversationId)
+                    .setValue(0);
+            return;
+        }
+
+        if (this.data.conversations.archived.containsKey(conversationId)) {
+            this.data.conversations.archived.put(conversationId, 0);
+            UserProfile.getArchivedConversationsReference()
+                    .child(conversationId)
+                    .setValue(0);
+        }
+    }
+
     /* Fields need to be public to enable Firebase to access them */
     @SuppressWarnings({"WeakerAccess", "CanBeFinal"})
     public static class Data implements Serializable {
@@ -386,17 +437,20 @@ public class UserProfile implements Serializable {
         public Profile profile;
         public Statistics statistics;
         public Books books;
+        public Conversations conversations;
 
         public Data() {
             this.profile = new Profile();
             this.statistics = new Statistics();
             this.books = new Books();
+            this.conversations = new Conversations();
         }
 
         public Data(@NonNull Data other) {
             this.profile = new Profile(other.profile);
             this.statistics = new Statistics(other.statistics);
             this.books = new Books(other.books);
+            this.conversations = new Conversations(other.conversations);
         }
 
         private static class Profile implements Serializable {
@@ -460,6 +514,21 @@ public class UserProfile implements Serializable {
 
             public Books(@NonNull Books other) {
                 this.ownedBooks = new HashMap<>(other.ownedBooks);
+            }
+        }
+
+        private static class Conversations implements Serializable {
+            public Map<String, Integer> active;
+            public Map<String, Integer> archived;
+
+            public Conversations() {
+                this.active = new HashMap<>();
+                this.archived = new HashMap<>();
+            }
+
+            public Conversations(@NonNull Conversations other) {
+                this.active = new HashMap<>(other.active);
+                this.archived = new HashMap<>(other.archived);
             }
         }
 

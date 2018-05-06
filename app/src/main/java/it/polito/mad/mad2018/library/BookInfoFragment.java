@@ -24,6 +24,7 @@ import java.util.List;
 
 import it.polito.mad.mad2018.R;
 import it.polito.mad.mad2018.data.Book;
+import it.polito.mad.mad2018.data.Conversation;
 import it.polito.mad.mad2018.data.UserProfile;
 import it.polito.mad.mad2018.profile.ShowProfileFragment;
 import it.polito.mad.mad2018.utils.FragmentDialog;
@@ -52,7 +53,7 @@ public class BookInfoFragment extends FragmentDialog<BookInfoFragment.DialogID>
     public BookInfoFragment() { /* Required empty public constructor */ }
 
     public static BookInfoFragment newInstance(Book book, boolean showOwner, boolean deletable) {
-        showOwner = showOwner && !UserProfile.isLocal(book.getOwnerID());
+        showOwner = showOwner && !UserProfile.isLocal(book.getOwnerId());
         deletable = deletable && !showOwner;
 
         BookInfoFragment fragment = new BookInfoFragment();
@@ -182,10 +183,12 @@ public class BookInfoFragment extends FragmentDialog<BookInfoFragment.DialogID>
         TextView ownerNameTextView = view.findViewById(R.id.fbi_book_owner);
         ProgressBar progressBarLoading = view.findViewById(R.id.fbi_loading_owner);
         Button ownerProfileButton = view.findViewById(R.id.fbi_show_profile_button);
+        Button chatButton = view.findViewById(R.id.fbi_chat);
 
         progressBarLoading.setVisibility(owner == null ? View.VISIBLE : View.GONE);
         ownerNameTextView.setVisibility(owner == null ? View.GONE : View.VISIBLE);
         ownerProfileButton.setEnabled(owner != null);
+        chatButton.setEnabled(owner != null);
 
         if (owner != null) {
             ownerNameTextView.setText(owner.getUsername());
@@ -197,6 +200,14 @@ public class BookInfoFragment extends FragmentDialog<BookInfoFragment.DialogID>
                     .replace(R.id.bi_main_fragment, ShowProfileFragment.newInstance(owner, false))
                     .addToBackStack(null) // To allow to come back to the previous fragment when back is pressed
                     .commit();
+        });
+
+        chatButton.setOnClickListener(v -> {
+            // TODO: replace this
+            Conversation conversation = new Conversation(this.book);
+            conversation.sendMessage("First message");
+            conversation.sendMessage("Second message");
+            conversation.sendMessage("Third message");
         });
     }
 
@@ -213,7 +224,7 @@ public class BookInfoFragment extends FragmentDialog<BookInfoFragment.DialogID>
             return;
 
         this.profileListener = UserProfile.setOnProfileLoadedListener(
-                this.book.getOwnerID(),
+                this.book.getOwnerId(),
                 new ValueEventListener() {
                     @Override
                     public void onDataChange(DataSnapshot dataSnapshot) {
@@ -223,7 +234,7 @@ public class BookInfoFragment extends FragmentDialog<BookInfoFragment.DialogID>
 
                         UserProfile.Data data = dataSnapshot.getValue(UserProfile.Data.class);
                         if (data != null) {
-                            owner = new UserProfile(book.getOwnerID(), data, getResources());
+                            owner = new UserProfile(book.getOwnerId(), data, getResources());
                             assert getView() != null;
                             fillViewsOwner(getView(), true);
                         }
@@ -238,7 +249,7 @@ public class BookInfoFragment extends FragmentDialog<BookInfoFragment.DialogID>
 
     private boolean unsetOnProfileLoadedListener() {
         if (this.profileListener != null) {
-            UserProfile.unsetOnProfileLoadedListener(book.getOwnerID(), this.profileListener);
+            UserProfile.unsetOnProfileLoadedListener(book.getOwnerId(), this.profileListener);
             this.profileListener = null;
             return true;
         }
@@ -301,7 +312,6 @@ public class BookInfoFragment extends FragmentDialog<BookInfoFragment.DialogID>
 
     @Override
     public void onPopupDismiss(@Nullable String popupTag) {
-
     }
 
     public enum DialogID {

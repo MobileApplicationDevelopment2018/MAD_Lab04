@@ -1,0 +1,28 @@
+{
+  "rules": {
+    "users": {
+      "$uid": {
+        ".read": "auth != null",
+        ".write": "$uid === auth.uid"
+      }
+    },
+    "books": {
+      ".read": "auth != null",
+      "$bid": {
+        ".write": "(!data.exists() && newData.child('uid').val() === auth.uid) || (!newData.exists() && data.child('uid').val() === auth.uid)"
+      }
+    },
+    "conversations": {
+      "$cid": {
+        ".read": "(data.child('owner').val() === auth.uid || data.child('peer').val() === auth.uid)",
+        ".write": "!data.exists() && newData.child('peer').val() === auth.uid",
+        ".validate": "newData.hasChildren(['bookId', 'owner', 'peer']) && root.child('books/' + newData.child('bookId').val()).exists() && root.child('books/' + newData.child('bookId').val() + '/uid').val() === newData.child('owner').val()",
+        "messages": {
+          "$mid": {
+            ".write": "!data.exists() && newData.parent().parent().child('flags/archived').val() != true && ((newData.parent().parent().child('owner').val() === newData.child('recipient').val() && newData.parent().parent().child('peer').val() === auth.uid) || (newData.parent().parent().child('peer').val() === newData.child('recipient').val() && newData.parent().parent().child('owner').val() === auth.uid))"
+          }
+        }
+      }
+    }
+  }
+}

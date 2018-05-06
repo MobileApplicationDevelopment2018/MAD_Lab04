@@ -39,7 +39,6 @@ import java.util.Arrays;
 import java.util.Calendar;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Locale;
 
 import it.polito.mad.mad2018.BuildConfig;
 import it.polito.mad.mad2018.R;
@@ -77,7 +76,6 @@ public class AddBookFragment extends FragmentDialog<AddBookFragment.DialogID>
 
     private Book book;
     private boolean fileToBeDeleted;
-    private Locale currentLocale;
 
     private OnBookAddedListener onBookAddedListener;
 
@@ -140,7 +138,6 @@ public class AddBookFragment extends FragmentDialog<AddBookFragment.DialogID>
 
         fillSpinnerYear(yearSpinner);
         fillSpinnerConditions(conditionSpinner);
-        currentLocale = getResources().getConfiguration().locale;
 
         book = null;
         fileToBeDeleted = false;
@@ -184,7 +181,7 @@ public class AddBookFragment extends FragmentDialog<AddBookFragment.DialogID>
             Toast.makeText(getContext(), R.string.add_book_query_ok, Toast.LENGTH_SHORT).show();
 
             final Volume.VolumeInfo volumeInfo = volumes.getItems().get(0).getVolumeInfo();
-            Book book = new Book(isbnEdit.getText().toString(), volumeInfo, currentLocale);
+            Book book = new Book(isbnEdit.getText().toString(), volumeInfo);
             fillViews(book);
             hideSoftKeyboard();
         }

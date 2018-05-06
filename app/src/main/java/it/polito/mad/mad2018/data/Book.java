@@ -72,7 +72,7 @@ public class Book implements Serializable {
         this.data = data;
     }
 
-    public Book(@NonNull String isbn, @NonNull Volume.VolumeInfo volumeInfo, Locale locale) {
+    public Book(@NonNull String isbn, @NonNull Volume.VolumeInfo volumeInfo) {
         this.bookId = generateBookId();
         this.data = new Data();
 
@@ -83,7 +83,7 @@ public class Book implements Serializable {
 
         if (volumeInfo.getLanguage() != null) {
             this.data.bookInfo.language = new Locale(volumeInfo.getLanguage())
-                    .getDisplayLanguage(locale);
+                    .getDisplayLanguage(Locale.getDefault());
         }
 
         String year = volumeInfo.getPublishedDate();
@@ -92,9 +92,7 @@ public class Book implements Serializable {
         }
 
         if (volumeInfo.getCategories() != null) {
-            for (String category : volumeInfo.getCategories()) {
-                this.data.bookInfo.tags.add(String.format(locale, "%s", category));
-            }
+            this.data.bookInfo.tags.addAll(volumeInfo.getCategories());
         }
     }
 
@@ -227,7 +225,7 @@ public class Book implements Serializable {
         return new ArrayList<>(this.data.bookInfo.tags);
     }
 
-    public String getOwnerID() {
+    public String getOwnerId() {
         return this.data.uid;
     }
 
@@ -240,7 +238,7 @@ public class Book implements Serializable {
     }
 
     private StorageReference getBookPictureReference() {
-        return Book.getBookPictureReference(getOwnerID(), getBookId());
+        return Book.getBookPictureReference(getOwnerId(), getBookId());
     }
 
     public StorageReference getBookPictureReferenceOrNull() {
@@ -248,7 +246,7 @@ public class Book implements Serializable {
     }
 
     private StorageReference getBookThumbnailReference() {
-        return Book.getBookThumbnailReference(getOwnerID(), getBookId());
+        return Book.getBookThumbnailReference(getOwnerId(), getBookId());
     }
 
     public StorageReference getBookThumbnailReferenceOrNull() {
