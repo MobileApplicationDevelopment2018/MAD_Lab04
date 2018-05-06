@@ -2,6 +2,7 @@ package it.polito.mad.mad2018.library;
 
 import android.app.AlertDialog;
 import android.app.Dialog;
+import android.content.Intent;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
@@ -23,8 +24,8 @@ import com.google.firebase.database.ValueEventListener;
 import java.util.List;
 
 import it.polito.mad.mad2018.R;
+import it.polito.mad.mad2018.chat.SingleChatActivity;
 import it.polito.mad.mad2018.data.Book;
-import it.polito.mad.mad2018.data.Conversation;
 import it.polito.mad.mad2018.data.UserProfile;
 import it.polito.mad.mad2018.profile.ShowProfileFragment;
 import it.polito.mad.mad2018.utils.FragmentDialog;
@@ -203,11 +204,9 @@ public class BookInfoFragment extends FragmentDialog<BookInfoFragment.DialogID>
         });
 
         chatButton.setOnClickListener(v -> {
-            // TODO: replace this
-            Conversation conversation = new Conversation(this.book);
-            conversation.sendMessage("First message");
-            conversation.sendMessage("Second message");
-            conversation.sendMessage("Third message");
+            Intent intent = new Intent(getActivity(), SingleChatActivity.class);
+            intent.putExtra("user_id", owner.getUsername());
+            startActivity(intent);
         });
     }
 

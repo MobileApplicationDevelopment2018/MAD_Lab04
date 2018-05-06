@@ -54,7 +54,7 @@ public class ActiveChatsFragment extends Fragment {
 
         FirebaseRecyclerOptions<Conversation> options = Conversation.getActiveConversations();
         adapter = new ChatAdapter(options, (v, model) -> {
-            Intent toChat = new Intent(getActivity(), ChatActivity.class);
+            Intent toChat = new Intent(getActivity(), SingleChatActivity.class);
             toChat.putExtra(Conversation.CONVERSATION_KEY, model);
             startActivity(toChat);
         }, onItemCountChangedListener);

@@ -51,9 +51,9 @@ public class ArchivedChatsFragment extends Fragment {
             recyclerView.setVisibility(count == 0 ? View.GONE : View.VISIBLE);
         };
 
-        FirebaseRecyclerOptions<Conversation> options = Conversation.getActiveConversations();
+        FirebaseRecyclerOptions<Conversation> options = Conversation.getArchivedConversations();
         adapter = new ChatAdapter(options, (v, model) -> {
-            Intent toChat = new Intent(getActivity(), ChatActivity.class);
+            Intent toChat = new Intent(getActivity(), SingleChatActivity.class);
             toChat.putExtra(Conversation.CONVERSATION_KEY, model);
             startActivity(toChat);
         }, onItemCountChangedListener);

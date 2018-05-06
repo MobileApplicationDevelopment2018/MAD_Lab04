@@ -19,15 +19,15 @@ import java.util.List;
 
 import it.polito.mad.mad2018.R;
 
-public class ChatFragment extends Fragment {
+public class MyChatsFragment extends Fragment {
     private TabLayout tabLayout;
     private AppBarLayout appBarLayout;
 
-    public ChatFragment() {
+    public MyChatsFragment() {
     }
 
-    public static ChatFragment newInstance() {
-        return new ChatFragment();
+    public static MyChatsFragment newInstance() {
+        return new MyChatsFragment();
     }
 
     @Override
@@ -81,7 +81,7 @@ public class ChatFragment extends Fragment {
     }
 
     private void setupViewPager(ViewPager viewPager) {
-        ChatFragment.ViewPagerAdapter adapter = new ChatFragment.ViewPagerAdapter(getChildFragmentManager());
+        MyChatsFragment.ViewPagerAdapter adapter = new MyChatsFragment.ViewPagerAdapter(getChildFragmentManager());
         adapter.addFragment(ActiveChatsFragment.newInstance(), getResources().getString(R.string.active_chats));
         adapter.addFragment(ArchivedChatsFragment.newInstance(), getResources().getString(R.string.archived_chats));
         viewPager.setAdapter(adapter);
