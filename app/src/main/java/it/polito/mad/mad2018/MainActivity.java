@@ -114,8 +114,10 @@ public class MainActivity extends AppCompatActivityDialog<MainActivity.DialogID>
         } else {
             Fragment fragment = getSupportFragmentManager().findFragmentByTag(FRAGMENT_TAG);
             if (fragment instanceof ExploreFragment) {
-                if (((ExploreFragment) fragment).onBackPressed() == 0) {
+                if (((ExploreFragment) fragment).getCurrentDisplayedFragment() == 0) {
                     super.onBackPressed();
+                } else {
+                    ((ExploreFragment) fragment).onBackPressed();
                 }
             } else {
                 super.onBackPressed();

@@ -37,12 +37,10 @@ import it.polito.mad.mad2018.library.BookInfoActivity;
 import it.polito.mad.mad2018.widgets.MapWidget;
 
 public class ExploreFragment extends Fragment {
-    private final static String MAP_FRAGMENT_TAG = "map_fragment";
-    private final static String MAP_IS_SHOWN_KEY = "map_shown";
+    private static final String TAG = "ExploreFragment";
+
     private final static int LIST_ID = 0;
     private final static int MAP_ID = 1;
-
-    private boolean isMapShown = false;
 
     private final Searcher searcher;
     private FilterResultsFragment filterResultsFragment;
@@ -101,6 +99,27 @@ public class ExploreFragment extends Fragment {
 
         pager = view.findViewById(R.id.search_pager);
         SearchResultsPagerAdapter pagerAdapter = new SearchResultsPagerAdapter(getChildFragmentManager());
+        pager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
+            @Override
+            public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
+            }
+
+            @Override
+            public void onPageSelected(int position) {
+                assert getActivity() != null;
+                Toolbar toolbar = getActivity().findViewById(R.id.toolbar);
+                MenuItem icon = toolbar.getMenu().findItem(R.id.menu_action_map);
+                if (icon == null)
+                    return;
+
+                icon.setIcon((pager.getCurrentItem() == MAP_ID) ?
+                        R.drawable.ic_format_list_bulleted_white_24dp : R.drawable.ic_location_on_white_24dp);
+            }
+
+            @Override
+            public void onPageScrollStateChanged(int state) {
+            }
+        });
         pager.setAdapter(pagerAdapter);
 
         return view;
@@ -129,7 +148,6 @@ public class ExploreFragment extends Fragment {
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
-
         assert getActivity() != null;
         getActivity().setTitle(R.string.explore);
     }
@@ -208,6 +226,14 @@ public class ExploreFragment extends Fragment {
         appBarLayout = getActivity().findViewById(R.id.app_bar_layout);
         appBarLayout.addView(algoliaLogoLayout);
 
+        if (getActivity() != null) {
+            MenuItem icon = ((Toolbar) getActivity().findViewById(R.id.toolbar)).getMenu()
+                    .findItem(R.id.menu_action_map);
+
+            if (icon != null)
+                icon.setIcon((pager.getCurrentItem() == MAP_ID) ? R.drawable.ic_format_list_bulleted_white_24dp : R.drawable.ic_location_on_white_24dp);
+        }
+
         super.onCreateOptionsMenu(menu, inflater);
     }
 
@@ -218,16 +244,10 @@ public class ExploreFragment extends Fragment {
                 filterResultsFragment.show(getChildFragmentManager(), FilterResultsFragment.TAG);
                 return true;
             case R.id.menu_action_map:
-                if (!isMapShown) {
-                    isMapShown = showMap();
-                    Toolbar toolbar = (Toolbar) getActivity().findViewById(R.id.toolbar);
-                    toolbar.getMenu().findItem(R.id.menu_action_map).setIcon(R.drawable.ic_format_list_bulleted_white_24dp);
-                } else {
-                    isMapShown = hideMap();
-                    Toolbar toolbar = (Toolbar) getActivity().findViewById(R.id.toolbar);
-                    toolbar.getMenu().findItem(R.id.menu_action_map).setIcon(R.drawable.ic_location_on_white_24dp);
-                }
-
+                if (pager.getCurrentItem() == 0)
+                    showMap();
+                else
+                    hideMap();
                 return true;
             default:
                 return super.onOptionsItemSelected(item);
@@ -240,13 +260,12 @@ public class ExploreFragment extends Fragment {
         outState.putString(SEARCH_QUERY_STRING, searchQuery);
     }
 
-    public int onBackPressed() {
-        if (pager.getCurrentItem() == 0) {
-            return 0;
-        } else {
-            pager.setCurrentItem(0);
-            return 1;
-        }
+    public void onBackPressed() {
+        if (pager.getCurrentItem() == 0)
+            pager.setCurrentItem(MAP_ID);
+        else
+            pager.setCurrentItem(LIST_ID);
+
     }
 
     private void setupGoogleAPI() {
@@ -254,6 +273,18 @@ public class ExploreFragment extends Fragment {
         mGoogleApiClient = new GoogleApiClient.Builder(getContext())
                 .addApi(LocationServices.API)
                 .build();
+    }
+
+    public int getCurrentDisplayedFragment() {
+        return pager.getCurrentItem();
+    }
+
+    private void showMap() {
+        pager.setCurrentItem(MAP_ID);
+    }
+
+    private void hideMap() {
+        pager.setCurrentItem(LIST_ID);
     }
 
     private class SearchResultsPagerAdapter extends FragmentStatePagerAdapter {
@@ -272,23 +303,5 @@ public class ExploreFragment extends Fragment {
         public int getCount() {
             return 2;
         }
-    }
-
-    private boolean showMap() {
-        final SupportMapFragment mapFragment = SupportMapFragment.newInstance();
-        MapWidget mapWidget = new MapWidget(mapFragment, bookId -> {
-            Intent toBookInfo = new Intent(getActivity(), BookInfoActivity.class);
-            toBookInfo.putExtra(Book.BOOK_ID_KEY, bookId);
-            startActivity(toBookInfo);
-        });
-        searcher.registerResultListener(mapWidget);
-        pager.setCurrentItem(MAP_ID);
-
-        return true;
-    }
-
-    private boolean hideMap() {
-        pager.setCurrentItem(LIST_ID);
-        return false;
     }
 }
