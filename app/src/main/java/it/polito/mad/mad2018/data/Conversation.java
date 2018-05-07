@@ -26,14 +26,14 @@ import it.polito.mad.mad2018.utils.Utilities;
 public class Conversation implements Serializable {
 
     public static final String CONVERSATION_KEY = "conversation_key";
-    public static final String CONVERSATION_ID_KEY = "conversation_key";
+    public static final String CONVERSATION_ID_KEY = "conversation_id_tkey";
 
     private static final String FIREBASE_CONVERSATIONS_KEY = "conversations";
     private static final String FIREBASE_MESSAGES_KEY = "messages";
 
     private static final String FIREBASE_CONVERSATION_ORDER_BY_KEY = "timestamp";
 
-    private final UserProfile localUser;
+    private static UserProfile localUser;
 
     public String getConversationId() {
         return conversationId;
@@ -43,18 +43,18 @@ public class Conversation implements Serializable {
     private final Conversation.Data data;
 
     public Conversation(@NonNull Book book) {
-        this.localUser = UserProfile.localInstance;
+        Conversation.localUser = UserProfile.localInstance;
         this.conversationId = Conversation.generateConversationId();
 
         this.data = new Data();
         this.data.bookId = book.getBookId();
         this.data.owner = book.getOwnerId();
-        this.data.peer = localUser.getUserId();
+        this.data.peer = Conversation.localUser.getUserId();
     }
 
-    private Conversation(@NonNull String conversationId,
-                         @NonNull Data data) {
-        this.localUser = UserProfile.localInstance;
+    public Conversation(@NonNull String conversationId,
+                        @NonNull Data data) {
+        Conversation.localUser = UserProfile.localInstance;
         this.conversationId = conversationId;
         this.data = data;
     }
@@ -107,7 +107,7 @@ public class Conversation implements Serializable {
                 .removeEventListener(listener);
     }
 
-    public FirebaseRecyclerOptions<Message> getMessages() {
+    public static FirebaseRecyclerOptions<Message> getMessages(String conversationId) {
         DatabaseReference dataRef = FirebaseDatabase.getInstance().getReference()
                 .child(FIREBASE_CONVERSATIONS_KEY)
                 .child(conversationId)
@@ -118,25 +118,35 @@ public class Conversation implements Serializable {
                         snapshot -> {
                             Conversation.Data.Message data = snapshot.getValue(Conversation.Data.Message.class);
                             assert data != null;
-                            return new Conversation.Message(data, localUser.getUserId());
+                            if (Conversation.localUser == null)
+                                localUser = UserProfile.localInstance;
+                            return new Conversation.Message(data, Conversation.localUser.getUserId());
                         })
                 .build();
     }
 
+    public FirebaseRecyclerOptions<Message> getMessages() {
+        return Conversation.getMessages(this.conversationId);
+    }
+
     public boolean isBookOwner() {
-        return Utilities.equals(localUser.getUserId(), this.data.owner);
+        return Utilities.equals(Conversation.localUser.getUserId(), this.data.owner);
     }
 
     public String getPeerUserId() {
         return isBookOwner() ? this.data.peer : this.data.owner;
     }
 
+    public String getBookId() {
+        return this.data.bookId;
+    }
+
     public int getUnreadMessagesCount() {
-        return localUser.getUnreadMessagesCount(conversationId);
+        return Conversation.localUser.getUnreadMessagesCount(conversationId);
     }
 
     public void setMessagesAllRead() {
-        localUser.setMessagesAllRead(conversationId);
+        Conversation.localUser.setMessagesAllRead(conversationId);
     }
 
     public Message getLastMessage() {
@@ -145,7 +155,7 @@ public class Conversation implements Serializable {
         }
 
         String last = Collections.max(this.data.messages.keySet());
-        return new Message(this.data.messages.get(last), localUser.getUserId());
+        return new Message(this.data.messages.get(last), Conversation.localUser.getUserId());
     }
 
     public Task<?> sendMessage(@NonNull String text) {
@@ -161,7 +171,7 @@ public class Conversation implements Serializable {
 
         if (this.data.messages.size() == 0) {
             tasks.add(conversationReference.setValue(this.data));
-            tasks.add(localUser.addConversation(this.conversationId, this.data.bookId));
+            tasks.add(Conversation.localUser.addConversation(this.conversationId, this.data.bookId));
         }
 
         DatabaseReference messageReference = conversationReference
@@ -172,6 +182,7 @@ public class Conversation implements Serializable {
 
         return Tasks.whenAllSuccess(tasks);
     }
+
 
     public static class Message implements Serializable {
 
