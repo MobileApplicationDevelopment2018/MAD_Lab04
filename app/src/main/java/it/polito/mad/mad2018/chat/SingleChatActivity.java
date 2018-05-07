@@ -70,7 +70,9 @@ public class SingleChatActivity extends AppCompatActivity {
         onItemCountChangedListener = (count) -> {
             noMessages.setVisibility(count == 0 ? View.VISIBLE : View.GONE);
             messages.setVisibility(count == 0 ? View.GONE : View.VISIBLE);
-            linearLayoutManager.scrollToPosition(count-1);
+            if(count > 0) {
+                linearLayoutManager.scrollToPosition(count - 1);
+            }
         };
 
         FirebaseRecyclerOptions<Conversation.Message> options = conversation.getMessages();
