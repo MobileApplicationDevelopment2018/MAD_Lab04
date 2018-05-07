@@ -2,6 +2,7 @@ package it.polito.mad.mad2018.chat;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -11,9 +12,13 @@ import android.view.ViewGroup;
 
 import com.firebase.ui.database.FirebaseRecyclerAdapter;
 import com.firebase.ui.database.FirebaseRecyclerOptions;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.ValueEventListener;
 
 import it.polito.mad.mad2018.R;
 import it.polito.mad.mad2018.data.Conversation;
+import it.polito.mad.mad2018.data.UserProfile;
 
 public class ActiveChatsFragment extends Fragment {
 
@@ -42,10 +47,17 @@ public class ActiveChatsFragment extends Fragment {
                              Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_active_chats, container, false);
 
-        RecyclerView recyclerView = view.findViewById(R.id.ac_recycler_view);
+        return view;
+    }
+
+    @Override
+    public void onActivityCreated(@Nullable Bundle savedInstanceState) {
+        super.onActivityCreated(savedInstanceState);
+
+        RecyclerView recyclerView = getActivity().findViewById(R.id.ac_recycler_view);
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
 
-        View noChatsView = view.findViewById(R.id.ac_no_active_chats);
+        View noChatsView = getActivity().findViewById(R.id.ac_no_active_chats);
 
         onItemCountChangedListener = (count) -> {
             noChatsView.setVisibility(count == 0 ? View.VISIBLE : View.GONE);
@@ -55,12 +67,24 @@ public class ActiveChatsFragment extends Fragment {
         FirebaseRecyclerOptions<Conversation> options = Conversation.getActiveConversations();
         adapter = new ChatAdapter(options, (v, model) -> {
             Intent toChat = new Intent(getActivity(), SingleChatActivity.class);
-            toChat.putExtra("user_id", model.getPeerUserId());
             toChat.putExtra(Conversation.CONVERSATION_KEY, model);
             startActivity(toChat);
         }, onItemCountChangedListener);
-        recyclerView.setAdapter(adapter);
 
-        return view;
+        recyclerView.setAdapter(adapter);
     }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        adapter.startListening();
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+        adapter.stopListening();
+    }
+
+
 }

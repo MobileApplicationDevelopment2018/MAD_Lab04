@@ -13,7 +13,7 @@
         android:visibility="gone" />
 
     <TextView
-        android:id="@+id/ac_no_archived_chats"
+        android:id="@+id/ac_no_active_chats"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:gravity="center"

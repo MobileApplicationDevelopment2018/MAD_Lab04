@@ -33,6 +33,11 @@ public class Conversation implements Serializable {
     private static final String FIREBASE_CONVERSATION_ORDER_BY_KEY = "timestamp";
 
     private final UserProfile localUser;
+
+    public String getConversationId() {
+        return conversationId;
+    }
+
     private final String conversationId;
     private final Conversation.Data data;
 

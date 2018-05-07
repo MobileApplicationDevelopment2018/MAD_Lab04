@@ -3,6 +3,7 @@ package it.polito.mad.mad2018.library;
 import android.content.Context;
 import android.support.annotation.NonNull;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -18,7 +19,7 @@ import it.polito.mad.mad2018.data.Book;
 import it.polito.mad.mad2018.utils.GlideApp;
 
 class BookAdapter extends FirebaseRecyclerAdapter<Book, BookAdapter.BookHolder> {
-
+    private static final String TAG = "BookAdapter";
     private final OnItemClickListener onItemClickListener;
     private final OnItemCountChangedListener onItemCountChangedListener;
 
@@ -28,6 +29,7 @@ class BookAdapter extends FirebaseRecyclerAdapter<Book, BookAdapter.BookHolder> 
         super(options);
         this.onItemClickListener = onItemClickListener;
         this.onItemCountChangedListener = onItemCountChangedListener;
+        Log.d(TAG, "costruttore: "+this.getItemCount()+" --- "+options.toString());
     }
 
     @NonNull
@@ -35,12 +37,14 @@ class BookAdapter extends FirebaseRecyclerAdapter<Book, BookAdapter.BookHolder> 
     public BookHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         View view = LayoutInflater.from(parent.getContext())
                 .inflate(R.layout.item_book, parent, false);
+        Log.d(TAG, "onCreateVewHolder: "+this.getItemCount()+"");
         return new BookHolder(view, onItemClickListener);
     }
 
     @Override
     protected void onBindViewHolder(@NonNull BookHolder holder, int position, @NonNull Book model) {
         holder.update(model);
+        Log.d(TAG, "onBindViewHolder: "+this.getItemCount()+"");
     }
 
     @Override
@@ -79,6 +83,7 @@ class BookAdapter extends FirebaseRecyclerAdapter<Book, BookAdapter.BookHolder> 
 
         private void update(Book model) {
             this.model = model;
+            Log.d(TAG, "update: "+model.getTitle());
             bookTitle.setText(model.getTitle());
             bookAuthors.setText(model.getAuthors(", "));
 
