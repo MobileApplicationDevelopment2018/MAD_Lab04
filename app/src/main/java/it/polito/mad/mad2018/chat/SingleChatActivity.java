@@ -29,6 +29,8 @@ import it.polito.mad.mad2018.utils.Utilities;
 public class SingleChatActivity extends AppCompatActivity {
 
     private String peerId;
+    private String conversationId;
+    private Book book;
     private EditText message;
     private TextView noMessages;
     private ImageButton btnSend;
@@ -56,7 +58,15 @@ public class SingleChatActivity extends AppCompatActivity {
             conversation = (Conversation) intent.getExtras().get(Conversation.CONVERSATION_KEY);
 
             if(conversation == null){
-                conversation = new Conversation((Book) intent.getExtras().get(Book.BOOK_KEY));
+                conversationId = (String) intent.getExtras().get(Conversation.CONVERSATION_ID_KEY);
+                book = (Book) intent.getExtras().get(Book.BOOK_KEY);
+                if (conversationId == null) {
+                    conversation = new Conversation(book);
+                    peerId = book.getOwnerId();
+                }
+            } else {
+                conversationId = conversation.getConversationId();
+                peerId = conversation.getPeerUserId();
             }
         }
 
@@ -73,7 +83,7 @@ public class SingleChatActivity extends AppCompatActivity {
             linearLayoutManager.scrollToPosition(count-1);
         };
 
-        FirebaseRecyclerOptions<Conversation.Message> options = conversation.getMessages();
+        FirebaseRecyclerOptions<Conversation.Message> options = Conversation.getMessages(conversationId);
         adapter = new SingleChatAdapter(options, null, onItemCountChangedListener);
         messages.setAdapter(adapter);
 
@@ -100,6 +110,8 @@ public class SingleChatActivity extends AppCompatActivity {
     }
 
     private void onClickButtonSend() {
+        if (conversation == null)
+            return;
         String msg = message.getText().toString();
         conversation.sendMessage(msg);
         message.setText("");
@@ -153,7 +165,7 @@ public class SingleChatActivity extends AppCompatActivity {
     }
 
     private void setChatListener(){
-        Conversation.setOnConversationLoadedListener(conversation.getConversationId(), new ValueEventListener() {
+        Conversation.setOnConversationLoadedListener(conversationId, new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
                 if(!unsetChatListener())
@@ -175,7 +187,7 @@ public class SingleChatActivity extends AppCompatActivity {
 
     private boolean unsetChatListener() {
         if(chatListener != null){
-            Conversation.unsetOnConversationLoadedListener(conversation.getConversationId(), chatListener);
+            Conversation.unsetOnConversationLoadedListener(conversationId, chatListener);
             this.chatListener = null;
             return true;
         }
@@ -183,9 +195,11 @@ public class SingleChatActivity extends AppCompatActivity {
     }
 
     private void setOnProfileLoadedListener() {
+        if (peerId == null)
+            return;
 
         this.profileListener = UserProfile.setOnProfileLoadedListener(
-                conversation.getPeerUserId(),
+                peerId,
                 new ValueEventListener() {
                     @Override
                     public void onDataChange(DataSnapshot dataSnapshot) {
@@ -195,7 +209,7 @@ public class SingleChatActivity extends AppCompatActivity {
 
                         UserProfile.Data data = dataSnapshot.getValue(UserProfile.Data.class);
                         if (data != null) {
-                            UserProfile user = new UserProfile(conversation.getPeerUserId(), data, MAD2018Application.applicationContext.getResources());
+                            UserProfile user = new UserProfile(peerId, data, MAD2018Application.applicationContext.getResources());
 
                             updateTitle(user.getUsername());
                         }
@@ -214,7 +228,7 @@ public class SingleChatActivity extends AppCompatActivity {
 
     private boolean unsetOnProfileLoadedListener() {
         if (this.profileListener != null) {
-            UserProfile.unsetOnProfileLoadedListener(conversation.getPeerUserId(), this.profileListener);
+            UserProfile.unsetOnProfileLoadedListener(peerId, this.profileListener);
             this.profileListener = null;
             return true;
         }

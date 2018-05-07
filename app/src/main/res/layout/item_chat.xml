@@ -37,7 +37,6 @@
                     android:ellipsize="end"
                     android:maxLines="2"
                     android:padding="8dp"
-                    android:text="User"
                     android:textAppearance="@style/TextAppearance.AppCompat.Headline" />
 
                 <TextView

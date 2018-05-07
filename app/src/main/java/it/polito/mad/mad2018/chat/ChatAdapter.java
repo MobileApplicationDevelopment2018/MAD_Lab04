@@ -3,29 +3,26 @@ package it.polito.mad.mad2018.chat;
 import android.content.Context;
 import android.support.annotation.NonNull;
 import android.support.v7.widget.RecyclerView;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
-import com.firebase.ui.auth.data.model.User;
 import com.firebase.ui.database.FirebaseRecyclerAdapter;
 import com.firebase.ui.database.FirebaseRecyclerOptions;
-import com.firebase.ui.database.ObservableSnapshotArray;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.ValueEventListener;
 
 import it.polito.mad.mad2018.MAD2018Application;
 import it.polito.mad.mad2018.R;
+import it.polito.mad.mad2018.data.Book;
 import it.polito.mad.mad2018.data.Conversation;
 import it.polito.mad.mad2018.data.UserProfile;
-import it.polito.mad.mad2018.utils.Utilities;
 
 public class ChatAdapter extends FirebaseRecyclerAdapter<Conversation, ChatAdapter.ChatHolder> {
 
-    private static final String TAG = "ChatAdapter";
+    private String bookId;
     private final OnItemClickListener onItemClickListener;
     private final OnItemCountChangedListener onItemCountChangedListener;
     private ValueEventListener profileListener;
@@ -118,6 +115,8 @@ public class ChatAdapter extends FirebaseRecyclerAdapter<Conversation, ChatAdapt
         private final TextView bookTitle;
         private final TextView message;
         private final TextView date;
+        private ValueEventListener bookListener;
+        private String bookId;
 
         private Conversation model;
 
@@ -135,12 +134,48 @@ public class ChatAdapter extends FirebaseRecyclerAdapter<Conversation, ChatAdapt
 
         public void update(Conversation model, String peer) {
             this.model = model;
-            this.bookTitle.setText("bookTitle");//TODO: set book Title
+            bookId = model.getBookId();
+            setOnBookLoadedListener();
             if(!peer.equals("")) {
                 this.peerId.setText(peer);
                 //this.message.setText(model.getLastMessage().getText());
                 //this.date.setText(model.getLastMessage().getDateTime());
             }
+        }
+
+        private void setTitle(String title) {
+            this.bookTitle.setText(title);
+        }
+
+        public void setOnBookLoadedListener() {
+            bookListener = Book.setOnBookLoadedListener(bookId, new ValueEventListener() {
+                @Override
+                public void onDataChange(DataSnapshot dataSnapshot) {
+                    if (!unsetOnBookLoadedListener(bookId)) {
+                        return;
+                    }
+
+                    Book.Data data = dataSnapshot.getValue(Book.Data.class);
+                    if (data != null) {
+                        Book book = new Book(bookId, data);
+                        setTitle(book.getTitle());
+                    }
+                }
+
+                @Override
+                public void onCancelled(DatabaseError databaseError) {
+                    unsetOnBookLoadedListener(bookId);
+                }
+            });
+        }
+
+        private boolean unsetOnBookLoadedListener(String bookId) {
+            if (!this.bookTitle.getText().equals("")) {
+                Book.unsetOnBookLoadedListener(bookId, this.bookListener);
+                this.bookId = null;
+                return true;
+            }
+            return false;
         }
     }
 }

@@ -7,6 +7,7 @@ import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -41,7 +42,7 @@ import rm.com.longpresspopup.PopupStateListener;
 
 public class BookInfoFragment extends FragmentDialog<BookInfoFragment.DialogID>
         implements PopupInflaterListener, PopupStateListener {
-
+    private static final String TAG = "BookInfoFragment";
     public final static String BOOK_SHOW_OWNER_KEY = "book_show_owner_key";
     public final static String BOOK_DELETABLE_KEY = "book_deletable_key";
 
@@ -208,6 +209,7 @@ public class BookInfoFragment extends FragmentDialog<BookInfoFragment.DialogID>
             Intent intent = new Intent(getActivity(), SingleChatActivity.class);
             intent.putExtra("user_id", owner.getUsername());
             intent.putExtra(Book.BOOK_KEY, book);
+            Log.d(TAG, "onclicklistener: " + UserProfile.localInstance.findConversationByBookId(book.getBookId()));
             intent.putExtra(Conversation.CONVERSATION_ID_KEY, UserProfile.localInstance.findConversationByBookId(book.getBookId()));
             startActivity(intent);
         });
