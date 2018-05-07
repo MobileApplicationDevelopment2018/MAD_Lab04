@@ -26,6 +26,7 @@ import it.polito.mad.mad2018.utils.Utilities;
 public class Conversation implements Serializable {
 
     public static final String CONVERSATION_KEY = "conversation_key";
+    public static final String CONVERSATION_ID_KEY = "conversation_key";
 
     private static final String FIREBASE_CONVERSATIONS_KEY = "conversations";
     private static final String FIREBASE_MESSAGES_KEY = "messages";

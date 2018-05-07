@@ -26,6 +26,7 @@ import java.util.List;
 import it.polito.mad.mad2018.R;
 import it.polito.mad.mad2018.chat.SingleChatActivity;
 import it.polito.mad.mad2018.data.Book;
+import it.polito.mad.mad2018.data.Conversation;
 import it.polito.mad.mad2018.data.UserProfile;
 import it.polito.mad.mad2018.profile.ShowProfileFragment;
 import it.polito.mad.mad2018.utils.FragmentDialog;
@@ -207,6 +208,7 @@ public class BookInfoFragment extends FragmentDialog<BookInfoFragment.DialogID>
             Intent intent = new Intent(getActivity(), SingleChatActivity.class);
             intent.putExtra("user_id", owner.getUsername());
             intent.putExtra(Book.BOOK_KEY, book);
+            intent.putExtra(Conversation.CONVERSATION_ID_KEY, UserProfile.localInstance.findConversationByBookId(book.getBookId()));
             startActivity(intent);
         });
     }
