@@ -78,6 +78,7 @@ public class SingleChatActivity extends AppCompatActivity {
         adapter = new SingleChatAdapter(options, null, onItemCountChangedListener);
         messages.setAdapter(adapter);
 
+        btnSend.setEnabled(false);
         message.addTextChangedListener(new TextWatcher() {
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {
             }
