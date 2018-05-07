@@ -62,6 +62,7 @@ public class SingleChatActivity extends AppCompatActivity {
                 book = (Book) intent.getExtras().get(Book.BOOK_KEY);
                 if (conversationId == null) {
                     conversation = new Conversation(book);
+                    conversationId = conversation.getConversationId();
                     peerId = book.getOwnerId();
                 }
             } else {
