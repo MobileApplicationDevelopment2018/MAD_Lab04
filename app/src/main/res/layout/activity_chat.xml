@@ -7,7 +7,6 @@
 
     <include layout="@layout/toolbar" />
 
-    
     <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
@@ -16,7 +15,8 @@
         <android.support.v7.widget.RecyclerView
             android:id="@+id/chat_messages"
             android:layout_width="match_parent"
-            android:layout_height="match_parent" />
+            android:layout_height="match_parent"
+            android:layout_above="@id/line"/>
 
         <TextView
             android:id="@+id/chat_no_messages"
