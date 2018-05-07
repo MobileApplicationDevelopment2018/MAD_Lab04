@@ -6,6 +6,8 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.EditText;
@@ -22,6 +24,7 @@ import it.polito.mad.mad2018.R;
 import it.polito.mad.mad2018.data.Book;
 import it.polito.mad.mad2018.data.Conversation;
 import it.polito.mad.mad2018.data.UserProfile;
+import it.polito.mad.mad2018.utils.Utilities;
 
 public class SingleChatActivity extends AppCompatActivity {
     private String peerId;
@@ -59,7 +62,9 @@ public class SingleChatActivity extends AppCompatActivity {
 
         findViews();
 
-        messages.setLayoutManager(new LinearLayoutManager(this));
+        final LinearLayoutManager linearLayoutManager = new LinearLayoutManager(this);
+        linearLayoutManager.setStackFromEnd(true);
+        messages.setLayoutManager(linearLayoutManager);
 
         btnSend.setOnClickListener(v -> onClickButtonSend());
 
@@ -73,6 +78,21 @@ public class SingleChatActivity extends AppCompatActivity {
         adapter = new SingleChatAdapter(options, null, onItemCountChangedListener);
         messages.setAdapter(adapter);
 
+        message.addTextChangedListener(new TextWatcher() {
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+            }
+
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+            }
+
+            public void afterTextChanged(Editable s) {
+                if (Utilities.isNullOrWhitespace(s.toString())) {
+                    btnSend.setEnabled(false);
+                } else{
+                    btnSend.setEnabled(true);
+                }
+            }
+        });
     }
 
     private void onClickButtonSend() {
