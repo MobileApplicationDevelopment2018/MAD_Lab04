@@ -13,31 +13,29 @@
         android:layout_height="1dp"
         android:layout_below="@id/toolbar" />
 
-    <FrameLayout
-        android:id="@+id/main_fragment"
+    <android.support.v7.widget.RecyclerView
+        android:id="@+id/chat_messages"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_below="@id/line_toolbar"
-        app:layout_behavior="@string/appbar_scrolling_view_behavior">
+        android:layout_below="@id/line_toolbar" />
 
-        <ProgressBar
-            android:id="@+id/bi_loading"
-            style="?android:attr/progressBarStyleLarge"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:visibility="gone" />
-    </FrameLayout>
+    <TextView
+        android:id="@+id/chat_no_messages"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center"
+        android:text="@string/no_messages"
+        android:textAppearance="@style/TextAppearance.AppCompat.Display1" />
 
     <View
         android:id="@+id/line"
         android:layout_width="match_parent"
         android:layout_height="1dp"
-        android:layout_above="@id/btnSend"
+        android:layout_above="@id/button_send"
         android:background="@color/light_green_300" />
 
     <ImageButton
-        android:id="@+id/btnSend"
+        android:id="@+id/button_send"
         android:layout_width="45dp"
         android:layout_height="45dp"
         android:layout_alignParentBottom="true"
@@ -49,14 +47,14 @@
         android:tint="@color/light_green_500" />
 
     <EditText
-        android:id="@+id/editWriteMessage"
+        android:id="@+id/message_send"
         android:layout_width="285dp"
         android:layout_height="45dp"
         android:layout_alignParentBottom="true"
         android:layout_alignParentStart="true"
         android:layout_below="@id/line"
         android:layout_marginStart="8dp"
-        android:layout_toStartOf="@id/btnSend"
+        android:layout_toStartOf="@id/button_send"
         android:inputType="textLongMessage"
         android:maxLines="1"
         android:textColorHint="#aeafaf"

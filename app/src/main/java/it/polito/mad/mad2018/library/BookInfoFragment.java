@@ -206,6 +206,7 @@ public class BookInfoFragment extends FragmentDialog<BookInfoFragment.DialogID>
         chatButton.setOnClickListener(v -> {
             Intent intent = new Intent(getActivity(), SingleChatActivity.class);
             intent.putExtra("user_id", owner.getUsername());
+            intent.putExtra(Book.BOOK_KEY, book);
             startActivity(intent);
         });
     }

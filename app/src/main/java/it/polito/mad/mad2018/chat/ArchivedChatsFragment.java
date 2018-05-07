@@ -54,6 +54,7 @@ public class ArchivedChatsFragment extends Fragment {
         FirebaseRecyclerOptions<Conversation> options = Conversation.getArchivedConversations();
         adapter = new ChatAdapter(options, (v, model) -> {
             Intent toChat = new Intent(getActivity(), SingleChatActivity.class);
+            toChat.putExtra("user_id", model.getPeerUserId());
             toChat.putExtra(Conversation.CONVERSATION_KEY, model);
             startActivity(toChat);
         }, onItemCountChangedListener);

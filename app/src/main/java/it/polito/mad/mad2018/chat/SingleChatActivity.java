@@ -3,13 +3,30 @@ package it.polito.mad.mad2018.chat;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.EditText;
+import android.widget.ImageButton;
+import android.widget.TextView;
+
+import com.firebase.ui.database.FirebaseRecyclerOptions;
 
 import it.polito.mad.mad2018.R;
+import it.polito.mad.mad2018.data.Book;
+import it.polito.mad.mad2018.data.Conversation;
 
 public class SingleChatActivity extends AppCompatActivity {
     private String peerId;
+    private EditText message;
+    private TextView noMessages;
+    private ImageButton btnSend;
+    private RecyclerView messages;
+    private Conversation conversation;
+    private SingleChatAdapter.OnItemCountChangedListener onItemCountChangedListener;
+    private SingleChatAdapter adapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -27,8 +44,37 @@ public class SingleChatActivity extends AppCompatActivity {
         Intent intent = getIntent();
         if (intent != null) {
             peerId = (String) intent.getExtras().get("user_id");
+            conversation = (Conversation) intent.getExtras().get(Conversation.CONVERSATION_KEY);
+
+            if(conversation == null){
+                conversation = new Conversation((Book) intent.getExtras().get(Book.BOOK_KEY));
+            }
             this.setTitle(peerId);
         }
+
+        findViews();
+
+        messages.setLayoutManager(new LinearLayoutManager(this));
+
+        btnSend.setOnClickListener(v -> onClickButtonSend());
+
+
+        onItemCountChangedListener = (count) -> {
+            noMessages.setVisibility(count == 0 ? View.VISIBLE : View.GONE);
+            messages.setVisibility(count == 0 ? View.GONE : View.VISIBLE);
+        };
+
+        FirebaseRecyclerOptions<Conversation.Message> options = conversation.getMessages();
+        adapter = new SingleChatAdapter(options, null, onItemCountChangedListener);
+        messages.setAdapter(adapter);
+
+    }
+
+    private void onClickButtonSend() {
+        String msg = message.getText().toString();
+
+
+
     }
 
     @Override
@@ -62,4 +108,12 @@ public class SingleChatActivity extends AppCompatActivity {
     public void onBackPressed() {
         super.onBackPressed();
     }
+
+    private void findViews(){
+        this.message = this.findViewById(R.id.message_send);
+        this.btnSend = this.findViewById(R.id.button_send);
+        this.noMessages = this.findViewById(R.id.chat_no_messages);
+        this.messages = this.findViewById(R.id.chat_messages);
+    }
+
 }

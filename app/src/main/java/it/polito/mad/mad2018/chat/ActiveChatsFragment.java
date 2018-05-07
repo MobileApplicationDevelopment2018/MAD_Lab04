@@ -17,7 +17,7 @@ import it.polito.mad.mad2018.data.Conversation;
 
 public class ActiveChatsFragment extends Fragment {
 
-    private FirebaseRecyclerAdapter<Conversation, ChatAdapter.ChatHolder> adapter;
+    private ChatAdapter adapter;
     private ChatAdapter.OnItemCountChangedListener onItemCountChangedListener;
 
     public ActiveChatsFragment() {
@@ -55,6 +55,7 @@ public class ActiveChatsFragment extends Fragment {
         FirebaseRecyclerOptions<Conversation> options = Conversation.getActiveConversations();
         adapter = new ChatAdapter(options, (v, model) -> {
             Intent toChat = new Intent(getActivity(), SingleChatActivity.class);
+            toChat.putExtra("user_id", model.getPeerUserId());
             toChat.putExtra(Conversation.CONVERSATION_KEY, model);
             startActivity(toChat);
         }, onItemCountChangedListener);

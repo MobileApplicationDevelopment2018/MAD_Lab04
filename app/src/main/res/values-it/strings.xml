@@ -148,4 +148,5 @@
     <string name="chat">Chat</string>
     <string name="no_active_chats">Ancora nessuna chat attiva</string>
     <string name="no_archived_chats">Ancora nessuna chat archiviata</string>
+    <string name="no_messages">No messages</string>
 </resources>
