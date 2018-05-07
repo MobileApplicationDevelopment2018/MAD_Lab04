@@ -44,6 +44,7 @@ public class UserProfile implements Serializable {
     private static final String FIREBASE_CONVERSATIONS_KEY = "conversations";
     private static final String FIREBASE_ACTIVE_CONVERSATIONS_KEY = "active";
     private static final String FIREBASE_ARCHIVED_CONVERSATIONS_KEY = "archived";
+    private static final String FIREBASE_UNREAD_MESSAGES_KEY = "unreadMessages";
 
     private static final String FIREBASE_PROFILE_KEY = "profile";
     private static final String FIREBASE_STORAGE_USERS_FOLDER = "users";
@@ -398,40 +399,54 @@ public class UserProfile implements Serializable {
                 .partialUpdateObjectsAsync(new JSONArray(bookUpdates), completionHandler);
     }
 
-    Task<?> addConversation(@NonNull String conversationId) {
-        this.data.conversations.active.put(conversationId, 0);
+    Task<?> addConversation(@NonNull String conversationId, @NonNull String bookId) {
+        Data.Conversations.Conversation conversation = new Data.Conversations.Conversation(bookId);
+        this.data.conversations.active.put(conversationId, conversation);
         return UserProfile.getActiveConversationsReference()
                 .child(conversationId)
-                .setValue(0);
+                .setValue(conversation);
+    }
+
+    public String findConversationByBookId(@NonNull String bookId) {
+        for (Map.Entry<String, UserProfile.Data.Conversations.Conversation> entry :
+                this.data.conversations.active.entrySet()) {
+            if (Utilities.equals(entry.getValue().bookId, bookId)) {
+                return entry.getKey();
+            }
+        }
+        return null;
     }
 
     int getUnreadMessagesCount(@NonNull String conversationId) {
-        Integer unread = this.data.conversations.active.get(conversationId);
-        if (unread == null) {
-            unread = this.data.conversations.archived.get(conversationId);
+        UserProfile.Data.Conversations.Conversation conversation =
+                this.data.conversations.active.get(conversationId);
+        if (conversation == null) {
+            conversation = this.data.conversations.archived.get(conversationId);
         }
-        return unread == null ? 0 : unread;
+        return conversation == null ? 0 : conversation.unreadMessages;
     }
 
     void setMessagesAllRead(@NonNull String conversationId) {
         if (this.data.conversations.active.containsKey(conversationId)) {
-            this.data.conversations.active.put(conversationId, 0);
+            this.data.conversations.active.get(conversationId).unreadMessages = 0;
             UserProfile.getActiveConversationsReference()
                     .child(conversationId)
+                    .child(FIREBASE_UNREAD_MESSAGES_KEY)
                     .setValue(0);
             return;
         }
 
         if (this.data.conversations.archived.containsKey(conversationId)) {
-            this.data.conversations.archived.put(conversationId, 0);
+            this.data.conversations.archived.get(conversationId).unreadMessages = 0;
             UserProfile.getArchivedConversationsReference()
                     .child(conversationId)
+                    .child(FIREBASE_UNREAD_MESSAGES_KEY)
                     .setValue(0);
         }
     }
 
     /* Fields need to be public to enable Firebase to access them */
-    @SuppressWarnings({"WeakerAccess", "CanBeFinal"})
+    @SuppressWarnings({"WeakerAccess", "CanBeFinal", "unused"})
     public static class Data implements Serializable {
 
         public Profile profile;
@@ -513,13 +528,13 @@ public class UserProfile implements Serializable {
             }
 
             public Books(@NonNull Books other) {
-                this.ownedBooks = new HashMap<>(other.ownedBooks);
+                this.ownedBooks = other.ownedBooks;
             }
         }
 
         private static class Conversations implements Serializable {
-            public Map<String, Integer> active;
-            public Map<String, Integer> archived;
+            public Map<String, Conversation> active;
+            public Map<String, Conversation> archived;
 
             public Conversations() {
                 this.active = new HashMap<>();
@@ -527,8 +542,26 @@ public class UserProfile implements Serializable {
             }
 
             public Conversations(@NonNull Conversations other) {
-                this.active = new HashMap<>(other.active);
-                this.archived = new HashMap<>(other.archived);
+                this.active = other.active;
+                this.archived = other.archived;
+            }
+
+            private static class Conversation implements Serializable {
+                public String bookId;
+                public int unreadMessages;
+                public long timestamp;
+
+                public Conversation() {
+                    this.bookId = null;
+                    this.unreadMessages = 0;
+                    this.timestamp = 0;
+                }
+
+                public Conversation(String bookId) {
+                    this.bookId = bookId;
+                    this.unreadMessages = 0;
+                    this.timestamp = 0;
+                }
             }
         }
 

@@ -7,16 +7,18 @@ import com.google.android.gms.tasks.Task;
 import com.google.android.gms.tasks.Tasks;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 
 import java.io.Serializable;
 import java.text.DateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
-import java.util.NavigableMap;
+import java.util.Map;
 import java.util.TimeZone;
-import java.util.TreeMap;
 
 import it.polito.mad.mad2018.MAD2018Application;
 import it.polito.mad.mad2018.utils.Utilities;
@@ -27,6 +29,8 @@ public class Conversation implements Serializable {
 
     private static final String FIREBASE_CONVERSATIONS_KEY = "conversations";
     private static final String FIREBASE_MESSAGES_KEY = "messages";
+
+    private static final String FIREBASE_CONVERSATION_ORDER_BY_KEY = "timestamp";
 
     private final UserProfile localUser;
     private final String conversationId;
@@ -61,7 +65,7 @@ public class Conversation implements Serializable {
                 .child(FIREBASE_CONVERSATIONS_KEY);
 
         return new FirebaseRecyclerOptions.Builder<Conversation>()
-                .setIndexedQuery(keyQuery, dataRef,
+                .setIndexedQuery(keyQuery.orderByChild(FIREBASE_CONVERSATION_ORDER_BY_KEY), dataRef,
                         snapshot -> {
                             String conversationId = snapshot.getKey();
                             Conversation.Data data = snapshot.getValue(Conversation.Data.class);
@@ -77,6 +81,24 @@ public class Conversation implements Serializable {
 
     public static FirebaseRecyclerOptions<Conversation> getArchivedConversations() {
         return Conversation.getConversations(UserProfile.getArchivedConversationsReference());
+    }
+
+    public static ValueEventListener setOnConversationLoadedListener(@NonNull String conversationId,
+                                                                     @NonNull ValueEventListener listener) {
+
+        return FirebaseDatabase.getInstance().getReference()
+                .child(FIREBASE_CONVERSATIONS_KEY)
+                .child(conversationId)
+                .addValueEventListener(listener);
+    }
+
+    public static void unsetOnConversationLoadedListener(@NonNull String conversationId,
+                                                         @NonNull ValueEventListener listener) {
+
+        FirebaseDatabase.getInstance().getReference()
+                .child(FIREBASE_CONVERSATIONS_KEY)
+                .child(conversationId)
+                .removeEventListener(listener);
     }
 
     public FirebaseRecyclerOptions<Message> getMessages() {
@@ -112,9 +134,12 @@ public class Conversation implements Serializable {
     }
 
     public Message getLastMessage() {
-        return this.data.messages.size() == 0
-                ? null
-                : new Message(this.data.messages.lastEntry().getValue(), localUser.getUserId());
+        if (this.data.messages.size() == 0) {
+            return null;
+        }
+
+        String last = Collections.max(this.data.messages.keySet());
+        return new Message(this.data.messages.get(last), localUser.getUserId());
     }
 
     public Task<?> sendMessage(@NonNull String text) {
@@ -130,7 +155,7 @@ public class Conversation implements Serializable {
 
         if (this.data.messages.size() == 0) {
             tasks.add(conversationReference.setValue(this.data));
-            tasks.add(localUser.addConversation(this.conversationId));
+            tasks.add(localUser.addConversation(this.conversationId, this.data.bookId));
         }
 
         DatabaseReference messageReference = conversationReference
@@ -187,14 +212,14 @@ public class Conversation implements Serializable {
         public String peer;
         public Conversation.Data.Flags flags;
 
-        public NavigableMap<String, Message> messages;
+        public Map<String, Message> messages;
 
         public Data() {
             this.bookId = null;
             this.owner = null;
             this.peer = null;
             this.flags = new Conversation.Data.Flags();
-            this.messages = new TreeMap<>();
+            this.messages = new HashMap<>();
         }
 
         private static class Flags implements Serializable {

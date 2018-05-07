@@ -134,9 +134,6 @@ public class Book implements Serializable {
     public static void unsetOnBookLoadedListener(@NonNull String bookId,
                                                  @NonNull ValueEventListener listener) {
 
-        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
-        assert currentUser != null;
-
         FirebaseDatabase.getInstance().getReference()
                 .child(FIREBASE_BOOKS_KEY)
                 .child(bookId)
