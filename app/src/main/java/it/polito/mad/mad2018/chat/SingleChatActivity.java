@@ -36,7 +36,6 @@ public class SingleChatActivity extends AppCompatActivity {
     private ImageButton btnSend;
     private RecyclerView messages;
     private Conversation conversation;
-    private SingleChatAdapter.OnItemCountChangedListener onItemCountChangedListener;
     private SingleChatAdapter adapter;
     private ValueEventListener profileListener, chatListener;
 
@@ -78,16 +77,18 @@ public class SingleChatActivity extends AppCompatActivity {
         final LinearLayoutManager linearLayoutManager = new LinearLayoutManager(this);
         messages.setLayoutManager(linearLayoutManager);
 
-        onItemCountChangedListener = (count) -> {
+        final SingleChatAdapter.OnItemCountChangedListener onItemCountChangedListener = (count) -> {
             noMessages.setVisibility(count == 0 ? View.VISIBLE : View.GONE);
             messages.setVisibility(count == 0 ? View.GONE : View.VISIBLE);
-            if(count > 0) {
+            if (count > 0) {
                 linearLayoutManager.scrollToPosition(count - 1);
             }
         };
 
+        final SingleChatAdapter.OnItemClickListener onItemClickListener = (view, message) -> { };
+
         FirebaseRecyclerOptions<Conversation.Message> options = Conversation.getMessages(conversationId);
-        adapter = new SingleChatAdapter(options, null, onItemCountChangedListener);
+        adapter = new SingleChatAdapter(options, onItemClickListener, onItemCountChangedListener);
         messages.setAdapter(adapter);
 
         btnSend.setEnabled(false);
