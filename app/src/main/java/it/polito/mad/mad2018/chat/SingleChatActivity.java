@@ -27,6 +27,7 @@ import it.polito.mad.mad2018.data.UserProfile;
 import it.polito.mad.mad2018.utils.Utilities;
 
 public class SingleChatActivity extends AppCompatActivity {
+
     private String peerId;
     private EditText message;
     private TextView noMessages;
@@ -36,7 +37,6 @@ public class SingleChatActivity extends AppCompatActivity {
     private SingleChatAdapter.OnItemCountChangedListener onItemCountChangedListener;
     private SingleChatAdapter adapter;
     private ValueEventListener profileListener, chatListener;
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -62,16 +62,15 @@ public class SingleChatActivity extends AppCompatActivity {
 
         findViews();
 
-        final LinearLayoutManager linearLayoutManager = new LinearLayoutManager(this);
-        linearLayoutManager.setStackFromEnd(true);
-        messages.setLayoutManager(linearLayoutManager);
-
         btnSend.setOnClickListener(v -> onClickButtonSend());
 
+        final LinearLayoutManager linearLayoutManager = new LinearLayoutManager(this);
+        messages.setLayoutManager(linearLayoutManager);
 
         onItemCountChangedListener = (count) -> {
             noMessages.setVisibility(count == 0 ? View.VISIBLE : View.GONE);
             messages.setVisibility(count == 0 ? View.GONE : View.VISIBLE);
+            linearLayoutManager.scrollToPosition(count-1);
         };
 
         FirebaseRecyclerOptions<Conversation.Message> options = conversation.getMessages();
@@ -80,12 +79,15 @@ public class SingleChatActivity extends AppCompatActivity {
 
         btnSend.setEnabled(false);
         message.addTextChangedListener(new TextWatcher() {
+            @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {
             }
 
+            @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
             }
 
+            @Override
             public void afterTextChanged(Editable s) {
                 if (Utilities.isNullOrWhitespace(s.toString())) {
                     btnSend.setEnabled(false);
@@ -94,6 +96,7 @@ public class SingleChatActivity extends AppCompatActivity {
                 }
             }
         });
+
     }
 
     private void onClickButtonSend() {
@@ -125,6 +128,7 @@ public class SingleChatActivity extends AppCompatActivity {
         adapter.startListening();
         setOnProfileLoadedListener();
         setChatListener();
+
     }
 
     @Override
@@ -133,6 +137,7 @@ public class SingleChatActivity extends AppCompatActivity {
         adapter.stopListening();
         unsetOnProfileLoadedListener();
         unsetChatListener();
+
     }
 
     @Override
