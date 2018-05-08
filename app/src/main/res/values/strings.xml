@@ -164,4 +164,5 @@
     <string name="no_active_chats">No active chats yet</string>
     <string name="no_archived_chats">No archived chats yet</string>
     <string name="no_messages">No messages</string>
+    <string name="loading">Loading…</string>
 </resources>

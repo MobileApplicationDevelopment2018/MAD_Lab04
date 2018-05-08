@@ -83,7 +83,6 @@ class BookAdapter extends FirebaseRecyclerAdapter<Book, BookAdapter.BookHolder> 
 
         private void update(Book model) {
             this.model = model;
-            Log.d(TAG, "update: "+model.getTitle());
             bookTitle.setText(model.getTitle());
             bookAuthors.setText(model.getAuthors(", "));
 

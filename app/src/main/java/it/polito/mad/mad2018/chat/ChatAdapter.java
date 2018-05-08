@@ -3,48 +3,57 @@ package it.polito.mad.mad2018.chat;
 import android.content.Context;
 import android.support.annotation.NonNull;
 import android.support.v7.widget.RecyclerView;
+import android.util.Pair;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions;
+import com.firebase.ui.common.ChangeEventType;
 import com.firebase.ui.database.FirebaseRecyclerAdapter;
 import com.firebase.ui.database.FirebaseRecyclerOptions;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.ValueEventListener;
 
-import it.polito.mad.mad2018.MAD2018Application;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+
 import it.polito.mad.mad2018.R;
 import it.polito.mad.mad2018.data.Book;
 import it.polito.mad.mad2018.data.Conversation;
 import it.polito.mad.mad2018.data.UserProfile;
+import it.polito.mad.mad2018.utils.GlideApp;
 
 public class ChatAdapter extends FirebaseRecyclerAdapter<Conversation, ChatAdapter.ChatHolder> {
 
-    private String bookId;
     private final OnItemClickListener onItemClickListener;
     private final OnItemCountChangedListener onItemCountChangedListener;
-    private ValueEventListener profileListener;
+
+    private Map<String, UserProfile> userProfiles;
+    private Map<String, Pair<ValueEventListener, Set<Integer>>> profileListeners;
+
+    private Map<String, Book> books;
+    private Map<String, Pair<ValueEventListener, Set<Integer>>> bookListeners;
+
 
     ChatAdapter(@NonNull FirebaseRecyclerOptions<Conversation> options,
                 @NonNull OnItemClickListener onItemClickListener,
                 @NonNull OnItemCountChangedListener onItemCountChangedListener) {
         super(options);
+
         this.onItemClickListener = onItemClickListener;
         this.onItemCountChangedListener = onItemCountChangedListener;
-    }
 
-    @Override
-    protected void onBindViewHolder(@NonNull ChatHolder holder, int position, @NonNull Conversation model) {
-        holder.update(model, "");
-
-    }
-
-    @Override
-    public void onViewAttachedToWindow(@NonNull ChatHolder holder) {
-        super.onViewAttachedToWindow(holder);
-        setOnProfileLoadedListener(holder.model, holder);
+        this.userProfiles = new HashMap<>();
+        this.profileListeners = new HashMap<>();
+        this.books = new HashMap<>();
+        this.bookListeners = new HashMap<>();
     }
 
     @NonNull
@@ -56,53 +65,147 @@ public class ChatAdapter extends FirebaseRecyclerAdapter<Conversation, ChatAdapt
     }
 
     @Override
+    protected void onBindViewHolder(@NonNull ChatHolder holder, int position, @NonNull Conversation conversation) {
+
+        String peerId = conversation.getPeerUserId();
+        String bookId = conversation.getBookId();
+
+        UserProfile peer = userProfiles.get(peerId);
+        Book book = books.get(bookId);
+
+        if (peer == null) {
+            this.addListener(peerId, position, true);
+        }
+        if (book == null) {
+            this.addListener(bookId, position, false);
+        }
+
+        holder.update(conversation, peer, book);
+    }
+
+    @Override
+    public void onDetachedFromRecyclerView(@NonNull RecyclerView recyclerView) {
+        super.onDetachedFromRecyclerView(recyclerView);
+
+        for (Map.Entry<String, Pair<ValueEventListener, Set<Integer>>> entry :
+                profileListeners.entrySet()) {
+            UserProfile.unsetOnProfileLoadedListener(entry.getKey(), entry.getValue().first);
+        }
+
+        for (Map.Entry<String, Pair<ValueEventListener, Set<Integer>>> entry :
+                bookListeners.entrySet()) {
+            Book.unsetOnBookLoadedListener(entry.getKey(), entry.getValue().first);
+        }
+    }
+
+    @Override
     public void onDataChanged() {
         super.onDataChanged();
         onItemCountChangedListener.onCountChangedListener(this.getItemCount());
     }
 
     @Override
-    public void onViewDetachedFromWindow(@NonNull ChatHolder holder) {
-        super.onViewDetachedFromWindow(holder);
-        unsetOnProfileLoadedListener(holder.model);
+    public void onChildChanged(@NonNull ChangeEventType type, @NonNull DataSnapshot snapshot, int newIndex, int oldIndex) {
+        super.onChildChanged(type, snapshot, newIndex, oldIndex);
+
+        if (type == ChangeEventType.MOVED && newIndex != oldIndex) {
+
+            for (Pair<ValueEventListener, Set<Integer>> listener : profileListeners.values()) {
+                if (listener.second.remove(oldIndex)) {
+                    listener.second.add(newIndex);
+                }
+            }
+
+            for (Pair<ValueEventListener, Set<Integer>> listener : bookListeners.values()) {
+                if (listener.second.remove(oldIndex)) {
+                    listener.second.add(newIndex);
+                }
+            }
+        }
     }
 
-    private void setOnProfileLoadedListener(Conversation model, ChatHolder holder) {
+    private void addListener(String id, int position, boolean requestProfile) {
 
-        this.profileListener = UserProfile.setOnProfileLoadedListener(
-                model.getPeerUserId(),
+        Map<String, Pair<ValueEventListener, Set<Integer>>> listeners =
+                requestProfile ? profileListeners : bookListeners;
+
+        Pair<ValueEventListener, Set<Integer>> listenerPair = listeners.get(id);
+        if (listenerPair == null) {
+
+            ValueEventListener listener = requestProfile
+                    ? setOnProfileLoadedListener(id)
+                    : setOnBookLoadedListener(id);
+
+            listenerPair = new Pair<>(listener, new HashSet<>(Collections.singletonList(position)));
+            listeners.put(id, listenerPair);
+        } else {
+            listenerPair.second.add(position);
+        }
+    }
+
+    private ValueEventListener setOnProfileLoadedListener(String peerId) {
+
+        return UserProfile.setOnProfileLoadedListener(
+                peerId,
                 new ValueEventListener() {
                     @Override
                     public void onDataChange(DataSnapshot dataSnapshot) {
-                        if (!unsetOnProfileLoadedListener(model)) {
+
+                        Pair<ValueEventListener, Set<Integer>> listener = profileListeners.remove(peerId);
+                        UserProfile.Data data = dataSnapshot.getValue(UserProfile.Data.class);
+                        if (listener == null || data == null) {
                             return;
                         }
 
-                        UserProfile.Data data = dataSnapshot.getValue(UserProfile.Data.class);
-                        if (data != null) {
-                            UserProfile user = new UserProfile(model.getPeerUserId(), data, MAD2018Application.applicationContext.getResources());
-                            holder.update(model, user.getUsername());
+                        UserProfile.unsetOnProfileLoadedListener(peerId, listener.first);
+
+                        userProfiles.put(peerId, new UserProfile(peerId, data));
+                        for (int position : listener.second) {
+                            notifyItemChanged(position);
                         }
                     }
 
                     @Override
                     public void onCancelled(DatabaseError databaseError) {
-                        unsetOnProfileLoadedListener(model);
+                        Pair<ValueEventListener, Set<Integer>> listener = profileListeners.remove(peerId);
+                        UserProfile.unsetOnProfileLoadedListener(peerId, listener.first);
                     }
                 });
     }
 
-    private boolean unsetOnProfileLoadedListener(Conversation model) {
-        if (this.profileListener != null) {
-            UserProfile.unsetOnProfileLoadedListener(model.getPeerUserId(), this.profileListener);
-            this.profileListener = null;
-            return true;
-        }
-        return false;
+    private ValueEventListener setOnBookLoadedListener(String bookId) {
+
+        return Book.setOnBookLoadedListener(
+                bookId,
+                new ValueEventListener() {
+                    @Override
+                    public void onDataChange(DataSnapshot dataSnapshot) {
+
+                        Pair<ValueEventListener, Set<Integer>> listener = bookListeners.remove(bookId);
+                        Book.Data data = dataSnapshot.getValue(Book.Data.class);
+                        if (listener == null || data == null) {
+                            return;
+                        }
+
+                        Book.unsetOnBookLoadedListener(bookId, listener.first);
+
+                        books.put(bookId, new Book(bookId, data));
+                        for (int position : listener.second) {
+                            notifyItemChanged(position);
+                        }
+                    }
+
+                    @Override
+                    public void onCancelled(DatabaseError databaseError) {
+                        Pair<ValueEventListener, Set<Integer>> listener = bookListeners.remove(bookId);
+                        UserProfile.unsetOnProfileLoadedListener(bookId, listener.first);
+                    }
+                });
     }
 
     interface OnItemClickListener {
-        void onClick(View view, Conversation conversation);
+        void onClick(@NonNull View view, @NonNull Conversation conversation,
+                     UserProfile peer, Book book);
     }
 
     interface OnItemCountChangedListener {
@@ -110,72 +213,50 @@ public class ChatAdapter extends FirebaseRecyclerAdapter<Conversation, ChatAdapt
     }
 
     static class ChatHolder extends RecyclerView.ViewHolder {
+
         private final Context context;
-        private final TextView peerId;
+        private final TextView peerName;
         private final TextView bookTitle;
         private final TextView message;
         private final TextView date;
-        private ValueEventListener bookListener;
-        private String bookId;
+        private final ImageView bookPicture;
 
-        private Conversation model;
+        private Conversation conversation;
+        private UserProfile peer;
+        private Book book;
 
         ChatHolder(View view, @NonNull OnItemClickListener listener) {
             super(view);
 
             this.context = view.getContext();
-            this.peerId = view.findViewById(R.id.cl_chat_item_peer);
+            this.peerName = view.findViewById(R.id.cl_chat_item_peer);
             this.message = view.findViewById(R.id.cl_chat_item_message);
             this.date = view.findViewById(R.id.cl_chat_item_date);
             this.bookTitle = view.findViewById(R.id.cl_chat_item_book_title);
+            this.bookPicture = view.findViewById(R.id.cl_chat_item_book_image);
 
-            view.setOnClickListener(v -> listener.onClick(v, model));
+            view.setOnClickListener(v -> listener.onClick(v, conversation, peer, book));
         }
 
-        public void update(Conversation model, String peer) {
-            this.model = model;
-            bookId = model.getBookId();
-            setOnBookLoadedListener();
-            if(!peer.equals("")) {
-                this.peerId.setText(peer);
-                //this.message.setText(model.getLastMessage().getText());
-                //this.date.setText(model.getLastMessage().getDateTime());
-            }
-        }
+        private void update(@NonNull Conversation conversation, UserProfile peer, Book book) {
 
-        private void setTitle(String title) {
-            this.bookTitle.setText(title);
-        }
+            this.conversation = conversation;
+            this.peer = peer;
+            this.book = book;
 
-        public void setOnBookLoadedListener() {
-            bookListener = Book.setOnBookLoadedListener(bookId, new ValueEventListener() {
-                @Override
-                public void onDataChange(DataSnapshot dataSnapshot) {
-                    if (!unsetOnBookLoadedListener(bookId)) {
-                        return;
-                    }
+            Conversation.Message last = conversation.getLastMessage();
+            this.message.setText(last.getText());
+            this.date.setText(last.getDateTime());
 
-                    Book.Data data = dataSnapshot.getValue(Book.Data.class);
-                    if (data != null) {
-                        Book book = new Book(bookId, data);
-                        setTitle(book.getTitle());
-                    }
-                }
+            GlideApp.with(context)
+                    .load(book == null ? null : book.getBookThumbnailReferenceOrNull())
+                    .placeholder(R.drawable.ic_default_book_preview)
+                    .transition(DrawableTransitionOptions.withCrossFade())
+                    .centerCrop()
+                    .into(bookPicture);
 
-                @Override
-                public void onCancelled(DatabaseError databaseError) {
-                    unsetOnBookLoadedListener(bookId);
-                }
-            });
-        }
-
-        private boolean unsetOnBookLoadedListener(String bookId) {
-            if (!this.bookTitle.getText().equals("")) {
-                Book.unsetOnBookLoadedListener(bookId, this.bookListener);
-                this.bookId = null;
-                return true;
-            }
-            return false;
+            this.peerName.setText(peer == null ? context.getString(R.string.loading) : peer.getUsername());
+            this.bookTitle.setText(book == null ? context.getString(R.string.loading) : book.getTitle());
         }
     }
 }

@@ -10,15 +10,10 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
-import com.firebase.ui.database.FirebaseRecyclerAdapter;
 import com.firebase.ui.database.FirebaseRecyclerOptions;
-import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
-import com.google.firebase.database.ValueEventListener;
 
 import it.polito.mad.mad2018.R;
 import it.polito.mad.mad2018.data.Conversation;
-import it.polito.mad.mad2018.data.UserProfile;
 
 public class ActiveChatsFragment extends Fragment {
 
@@ -65,9 +60,9 @@ public class ActiveChatsFragment extends Fragment {
         };
 
         FirebaseRecyclerOptions<Conversation> options = Conversation.getActiveConversations();
-        adapter = new ChatAdapter(options, (v, model) -> {
+        adapter = new ChatAdapter(options, (v, conversation, peer, book) -> {
             Intent toChat = new Intent(getActivity(), SingleChatActivity.class);
-            toChat.putExtra(Conversation.CONVERSATION_KEY, model);
+            toChat.putExtra(Conversation.CONVERSATION_KEY, conversation);
             startActivity(toChat);
         }, onItemCountChangedListener);
 

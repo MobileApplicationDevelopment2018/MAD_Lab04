@@ -61,16 +61,16 @@ public class UserProfile implements Serializable {
     private boolean localImageToBeDeleted;
     private String localImagePath;
 
-    public UserProfile(@NonNull Data data, @NonNull Resources resources) {
-        this(getCurrentUserId(), data, resources);
+    public UserProfile(@NonNull Data data) {
+        this(getCurrentUserId(), data);
     }
 
-    public UserProfile(@NonNull String uid, @NonNull Data data, @NonNull Resources resources) {
+    public UserProfile(@NonNull String uid, @NonNull Data data) {
         this.uid = uid;
         this.data = data;
         this.localImageToBeDeleted = false;
         this.localImagePath = null;
-        trimFields(resources);
+        trimFields(MAD2018Application.applicationContext.getResources());
     }
 
     public UserProfile(@NonNull UserProfile other) {

@@ -6,19 +6,19 @@ import com.firebase.ui.database.FirebaseRecyclerOptions;
 import com.google.android.gms.tasks.Task;
 import com.google.android.gms.tasks.Tasks;
 import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.Exclude;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ServerValue;
 import com.google.firebase.database.ValueEventListener;
 
 import java.io.Serializable;
 import java.text.DateFormat;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
-import java.util.TimeZone;
 
 import it.polito.mad.mad2018.MAD2018Application;
 import it.polito.mad.mad2018.utils.Utilities;
@@ -133,6 +133,10 @@ public class Conversation implements Serializable {
         return Utilities.equals(Conversation.localUser.getUserId(), this.data.owner);
     }
 
+    public String getBookOwnerId() {
+        return this.data.owner;
+    }
+
     public String getPeerUserId() {
         return isBookOwner() ? this.data.peer : this.data.owner;
     }
@@ -162,7 +166,6 @@ public class Conversation implements Serializable {
         Data.Message message = new Data.Message();
         message.recipient = getPeerUserId();
         message.text = text;
-        message.timestamp = System.currentTimeMillis();
 
         List<Task<?>> tasks = new ArrayList<>();
         DatabaseReference conversationReference = FirebaseDatabase.getInstance().getReference()
@@ -213,10 +216,8 @@ public class Conversation implements Serializable {
             DateFormat timeFormat = android.text.format.DateFormat.
                     getTimeFormat(MAD2018Application.applicationContext);
 
-            Calendar calendar = Calendar.getInstance(TimeZone.getDefault(), Locale.getDefault());
-            calendar.setTimeInMillis(message.timestamp);
-
-            return dateFormat.format(calendar) + " " + timeFormat.format(calendar);
+            Date date = new Date(message.getTimestamp());
+            return dateFormat.format(date) + " " + timeFormat.format(date);
         }
     }
 
@@ -250,12 +251,19 @@ public class Conversation implements Serializable {
         private static class Message implements Serializable {
             public String recipient;
             public String text;
-            public long timestamp;
+            public Object timestamp;
 
             public Message() {
                 this.recipient = null;
                 this.text = null;
-                this.timestamp = 0;
+                this.timestamp = ServerValue.TIMESTAMP;
+            }
+
+            @Exclude
+            private long getTimestamp() {
+                return this.timestamp instanceof Long
+                        ? (long) this.timestamp
+                        : System.currentTimeMillis();
             }
         }
     }

@@ -19,7 +19,6 @@ import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.ValueEventListener;
 
-import it.polito.mad.mad2018.MAD2018Application;
 import it.polito.mad.mad2018.R;
 import it.polito.mad.mad2018.data.Book;
 import it.polito.mad.mad2018.data.Conversation;
@@ -213,7 +212,7 @@ public class SingleChatActivity extends AppCompatActivity {
 
                         UserProfile.Data data = dataSnapshot.getValue(UserProfile.Data.class);
                         if (data != null) {
-                            UserProfile user = new UserProfile(peerId, data, MAD2018Application.applicationContext.getResources());
+                            UserProfile user = new UserProfile(peerId, data);
 
                             updateTitle(user.getUsername());
                         }

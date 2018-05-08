@@ -238,7 +238,7 @@ public class BookInfoFragment extends FragmentDialog<BookInfoFragment.DialogID>
 
                         UserProfile.Data data = dataSnapshot.getValue(UserProfile.Data.class);
                         if (data != null) {
-                            owner = new UserProfile(book.getOwnerId(), data, getResources());
+                            owner = new UserProfile(book.getOwnerId(), data);
                             assert getView() != null;
                             fillViewsOwner(getView(), true);
                         }

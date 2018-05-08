@@ -2,6 +2,7 @@ package it.polito.mad.mad2018.chat;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -37,7 +38,7 @@ public class ArchivedChatsFragment extends Fragment {
     }
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+    public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_archived_chats, container, false);
 
@@ -52,10 +53,9 @@ public class ArchivedChatsFragment extends Fragment {
         };
 
         FirebaseRecyclerOptions<Conversation> options = Conversation.getArchivedConversations();
-        adapter = new ChatAdapter(options, (v, model) -> {
+        adapter = new ChatAdapter(options, (v, conversation, peer, book) -> {
             Intent toChat = new Intent(getActivity(), SingleChatActivity.class);
-            toChat.putExtra("user_id", model.getPeerUserId());
-            toChat.putExtra(Conversation.CONVERSATION_KEY, model);
+            toChat.putExtra(Conversation.CONVERSATION_KEY, conversation);
             startActivity(toChat);
         }, onItemCountChangedListener);
         recyclerView.setAdapter(adapter);

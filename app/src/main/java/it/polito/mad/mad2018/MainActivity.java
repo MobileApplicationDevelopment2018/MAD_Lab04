@@ -303,7 +303,7 @@ public class MainActivity extends AppCompatActivityDialog<MainActivity.DialogID>
                 if (data == null) {
                     completeRegistration();
                 } else {
-                    UserProfile.localInstance = new UserProfile(data, getResources());
+                    UserProfile.localInstance = new UserProfile(data);
                     updateNavigationView();
                     showDefaultFragment();
                     showToast(getString(R.string.sign_in_welcome_back) + " " + UserProfile.localInstance.getUsername());
