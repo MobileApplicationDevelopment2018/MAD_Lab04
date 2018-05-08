@@ -90,13 +90,34 @@
                     </android.support.design.widget.TextInputLayout>
                 </LinearLayout>
 
-                <fragment
-                    android:id="@+id/ep_place_autocomplete_fragment"
-                    android:name="com.google.android.gms.location.places.ui.PlaceAutocompleteFragment"
+                <LinearLayout
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginEnd="-16dp"
-                    android:layout_marginStart="-16dp" />
+                    android:layout_height="match_parent"
+                    android:orientation="horizontal"
+                    android:paddingTop="12dp">
+
+                    <ImageView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:contentDescription="@string/hint_location"
+                        android:gravity="bottom|center_horizontal"
+                        android:paddingTop="26dp"
+                        android:src="@drawable/ic_location_on_black_24dp"
+                        android:tint="@color/colorPrimary" />
+
+                    <android.support.design.widget.TextInputLayout
+                        android:id="@+id/ep_input_layout_location"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="28dp">
+                        <AutoCompleteTextView
+                            android:id="@+id/ep_input_location"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:hint="@string/hint_location"/>
+
+                    </android.support.design.widget.TextInputLayout>
+                </LinearLayout>
 
                 <LinearLayout
                     android:layout_width="match_parent"

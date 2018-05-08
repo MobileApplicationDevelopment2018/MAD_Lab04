@@ -1,11 +1,11 @@
 package it.polito.mad.mad2018.profile;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.app.Dialog;
 import android.app.ProgressDialog;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.content.res.ColorStateList;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
@@ -19,12 +19,13 @@ import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.content.FileProvider;
-import android.support.v4.widget.ImageViewCompat;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.AdapterView;
+import android.widget.AutoCompleteTextView;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -32,13 +33,16 @@ import android.widget.Toast;
 
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions;
 import com.bumptech.glide.signature.ObjectKey;
-import com.google.android.gms.common.api.Status;
 import com.google.android.gms.location.places.AutocompleteFilter;
+import com.google.android.gms.location.places.AutocompletePrediction;
+import com.google.android.gms.location.places.GeoDataClient;
 import com.google.android.gms.location.places.Place;
-import com.google.android.gms.location.places.ui.PlaceAutocompleteFragment;
-import com.google.android.gms.location.places.ui.PlaceSelectionListener;
+import com.google.android.gms.location.places.PlaceBufferResponse;
+import com.google.android.gms.location.places.Places;
+import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.android.gms.tasks.Task;
 
 import java.io.File;
 
@@ -67,11 +71,16 @@ public class EditProfile extends AppCompatActivityDialog<EditProfile.DialogID> {
     private static final int PERMISSIONS_REQUEST_CAMERA = 5;
 
     private EditText username, biography;
+    private AutoCompleteTextView location;
+
     private UserProfile originalProfile, currentProfile;
     private int imageViewHeight;
 
     private boolean isCommitting;
     private AsyncTask<Void, Void, PictureUtilities.CompressedImage> pictureProcessingTask;
+
+    private GeoDataClient geoDataClient;
+    private PlaceAutocompleteAdapter placeAutocompleteAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -80,6 +89,7 @@ public class EditProfile extends AppCompatActivityDialog<EditProfile.DialogID> {
 
         username = findViewById(R.id.ep_input_username);
         biography = findViewById(R.id.ep_input_biography);
+        location = findViewById(R.id.ep_input_location);
 
         pictureProcessingTask = null;
 
@@ -106,8 +116,16 @@ public class EditProfile extends AppCompatActivityDialog<EditProfile.DialogID> {
 
         // Fill the views with the data
         fillViews(currentProfile);
-        setupFragmentAutocomplete(currentProfile.getLocation());
         attachListenerHideFloatingActionButton();
+
+        geoDataClient = Places.getGeoDataClient(this);
+        location.setOnItemClickListener(mAutocompleteClickListener);
+
+        // Set up the adapter that will retrieve suggestions from the Places Geo Data Client.
+        placeAutocompleteAdapter = new PlaceAutocompleteAdapter(this, geoDataClient, null, new AutocompleteFilter.Builder()
+                .setTypeFilter(AutocompleteFilter.TYPE_FILTER_CITIES)
+                .build());
+        location.setAdapter(placeAutocompleteAdapter);
 
         final FloatingActionButton floatingActionButton = findViewById(R.id.ep_camera_button);
         floatingActionButton.setOnClickListener(v -> this.openDialog(DialogID.DIALOG_CHOOSE_PICTURE, true));
@@ -353,47 +371,10 @@ public class EditProfile extends AppCompatActivityDialog<EditProfile.DialogID> {
         finish();
     }
 
-    private void setupFragmentAutocomplete(String location) {
-        PlaceAutocompleteFragment autocompleteFragment = (PlaceAutocompleteFragment)
-                getFragmentManager().findFragmentById(R.id.ep_place_autocomplete_fragment);
-
-        autocompleteFragment.setText(location);
-        autocompleteFragment.setHint(getString(R.string.hint_location));
-
-        assert autocompleteFragment.getView() != null;
-
-        ImageView searchIcon = autocompleteFragment.getView().findViewById(R.id.place_autocomplete_search_button);
-        searchIcon.setImageDrawable(getResources().getDrawable(R.drawable.ic_location_on_black_24dp));
-        ImageViewCompat.setImageTintList(searchIcon,
-                ColorStateList.valueOf(ContextCompat.getColor(this, R.color.colorPrimary)));
-
-        autocompleteFragment.setFilter(new AutocompleteFilter.Builder()
-                .setTypeFilter(AutocompleteFilter.TYPE_FILTER_CITIES)
-                .build());
-
-        autocompleteFragment.setOnPlaceSelectedListener(new PlaceSelectionListener() {
-            @Override
-            public void onPlaceSelected(Place place) {
-                currentProfile.update(place);
-            }
-
-            @Override
-            public void onError(Status status) {
-            }
-        });
-
-        autocompleteFragment.getView().findViewById(R.id.place_autocomplete_clear_button)
-                .setOnClickListener(v -> {
-                    autocompleteFragment.setText("");
-                    v.setVisibility(View.GONE);
-                    currentProfile.update(null);
-                });
-    }
-
     private void fillViews(UserProfile profile) {
         username.setText(profile.getUsername());
         biography.setText(profile.getBiography());
-
+        location.setText(profile.getLocation());
         loadImageProfile(profile);
     }
 
@@ -545,4 +526,28 @@ public class EditProfile extends AppCompatActivityDialog<EditProfile.DialogID> {
         DIALOG_ERROR_FAILED_SAVE_DATA,
         DIALOG_ERROR_FAILED_OBTAIN_PICTURE
     }
+
+    private AdapterView.OnItemClickListener mAutocompleteClickListener
+            = new AdapterView.OnItemClickListener() {
+        @Override
+        public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+            final AutocompletePrediction item = placeAutocompleteAdapter.getItem(position);
+            final String placeId = item.getPlaceId();
+            location.setText(item.getPrimaryText(null));
+            Task<PlaceBufferResponse> placeResult = geoDataClient.getPlaceById(placeId);
+            placeResult.addOnCompleteListener(mUpdatePlaceDetailsCallback);
+        }
+    };
+
+    private OnCompleteListener<PlaceBufferResponse> mUpdatePlaceDetailsCallback
+            = new OnCompleteListener<PlaceBufferResponse>() {
+        @SuppressLint("RestrictedApi")
+        @Override
+        public void onComplete(Task<PlaceBufferResponse> task) {
+            PlaceBufferResponse places = task.getResult();
+            final Place place = places.get(0);
+            currentProfile.update(place);
+            places.release();
+        }
+    };
 }
