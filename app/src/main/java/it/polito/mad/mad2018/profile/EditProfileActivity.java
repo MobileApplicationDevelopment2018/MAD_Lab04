@@ -57,7 +57,7 @@ import it.polito.mad.mad2018.utils.PictureUtilities;
 import it.polito.mad.mad2018.utils.TextWatcherUtilities;
 import it.polito.mad.mad2018.utils.Utilities;
 
-public class EditProfile extends AppCompatActivityDialog<EditProfile.DialogID> {
+public class EditProfileActivity extends AppCompatActivityDialog<EditProfileActivity.DialogID> {
 
     private static final String ORIGINAL_PROFILE_KEY = "original_profile";
     private static final String CURRENT_PROFILE_KEY = "current_profile";

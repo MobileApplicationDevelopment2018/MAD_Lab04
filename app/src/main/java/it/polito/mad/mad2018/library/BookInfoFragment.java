@@ -8,9 +8,12 @@ import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
@@ -40,7 +43,7 @@ import rm.com.longpresspopup.PopupStateListener;
 
 public class BookInfoFragment extends FragmentDialog<BookInfoFragment.DialogID>
         implements PopupInflaterListener, PopupStateListener {
-    private static final String TAG = "BookInfoFragment";
+
     public final static String BOOK_SHOW_OWNER_KEY = "book_show_owner_key";
     public final static String BOOK_DELETABLE_KEY = "book_deletable_key";
 
@@ -71,13 +74,14 @@ public class BookInfoFragment extends FragmentDialog<BookInfoFragment.DialogID>
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
                              Bundle savedInstanceState) {
 
+        setHasOptionsMenu(true);
         assert getActivity() != null;
         getActivity().setTitle(R.string.book_details);
 
         assert getArguments() != null;
         book = (Book) getArguments().getSerializable(Book.BOOK_KEY);
         boolean showOwner = getArguments().getBoolean(BOOK_SHOW_OWNER_KEY);
-        boolean deletable = getArguments().getBoolean(BOOK_DELETABLE_KEY);
+
         assert book != null;
 
         if (savedInstanceState != null) {
@@ -87,15 +91,36 @@ public class BookInfoFragment extends FragmentDialog<BookInfoFragment.DialogID>
         View view = inflater.inflate(R.layout.fragment_book_info, container, false);
 
         fillViewsBook(view);
-        if (showOwner || deletable) {
+        if (showOwner) {
             fillViewsOwner(view, showOwner);
-            fillViewsDelete(view, deletable);
         } else {
             view.findViewById(R.id.fbi_extra).setVisibility(View.GONE);
             view.findViewById(R.id.fbi_line_extra).setVisibility(View.GONE);
         }
 
         return view;
+    }
+
+    @Override
+    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
+        menu.clear();
+        inflater.inflate(R.menu.menu_book_info, menu);
+        boolean deletable = getArguments().getBoolean(BOOK_DELETABLE_KEY);
+        MenuItem deleteBookItem = menu.findItem(R.id.fbi_delete_book);
+        if(deletable) {
+            deleteBookItem.setVisible(true);
+        }
+        super.onCreateOptionsMenu(menu, inflater);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.fbi_delete_book:
+                this.openDialog(DialogID.DIALOG_DELETE, true);
+            default:
+                return super.onOptionsItemSelected(item);
+        }
     }
 
     @Override
@@ -181,21 +206,21 @@ public class BookInfoFragment extends FragmentDialog<BookInfoFragment.DialogID>
             return;
         }
 
+        View onwnerInfoView = view.findViewById(R.id.fbi_book_owner_info);
         TextView ownerNameTextView = view.findViewById(R.id.fbi_book_owner);
         ProgressBar progressBarLoading = view.findViewById(R.id.fbi_loading_owner);
-        Button ownerProfileButton = view.findViewById(R.id.fbi_show_profile_button);
-        Button chatButton = view.findViewById(R.id.fbi_chat);
+        ImageButton chatButton = view.findViewById(R.id.fbi_chat);
 
         progressBarLoading.setVisibility(owner == null ? View.VISIBLE : View.GONE);
-        ownerNameTextView.setVisibility(owner == null ? View.GONE : View.VISIBLE);
-        ownerProfileButton.setEnabled(owner != null);
+        onwnerInfoView.setVisibility(owner == null ? View.GONE : View.VISIBLE);
+        onwnerInfoView.setEnabled(owner != null);
         chatButton.setEnabled(owner != null);
 
         if (owner != null) {
             ownerNameTextView.setText(owner.getUsername());
         }
 
-        ownerProfileButton.setOnClickListener(v -> {
+        ownerNameTextView.setOnClickListener(v -> {
             assert getFragmentManager() != null;
             getFragmentManager().beginTransaction()
                     .replace(R.id.bi_main_fragment, ShowProfileFragment.newInstance(owner, false))
@@ -211,11 +236,11 @@ public class BookInfoFragment extends FragmentDialog<BookInfoFragment.DialogID>
         });
     }
 
-    private void fillViewsDelete(View view, boolean deletable) {
+    /*private void fillViewsDelete(View view, boolean deletable) {
         Button deleteButton = view.findViewById(R.id.fbi_delete_button);
         deleteButton.setVisibility(deletable ? View.VISIBLE : View.GONE);
         deleteButton.setOnClickListener(v -> this.openDialog(DialogID.DIALOG_DELETE, true));
-    }
+    }*/
 
     private void setOnProfileLoadedListener() {
         assert getArguments() != null;

@@ -39,7 +39,7 @@ import it.polito.mad.mad2018.chat.MyChatsFragment;
 import it.polito.mad.mad2018.data.UserProfile;
 import it.polito.mad.mad2018.explore.ExploreFragment;
 import it.polito.mad.mad2018.library.LibraryFragment;
-import it.polito.mad.mad2018.profile.EditProfile;
+import it.polito.mad.mad2018.profile.EditProfileActivity;
 import it.polito.mad.mad2018.profile.ShowProfileFragment;
 import it.polito.mad.mad2018.utils.AppCompatActivityDialog;
 import it.polito.mad.mad2018.utils.GlideApp;
@@ -398,7 +398,7 @@ public class MainActivity extends AppCompatActivityDialog<MainActivity.DialogID>
     }
 
     private void showEditProfileActivity(int code) {
-        Intent toEditProfile = new Intent(getApplicationContext(), EditProfile.class);
+        Intent toEditProfile = new Intent(getApplicationContext(), EditProfileActivity.class);
         toEditProfile.putExtra(UserProfile.PROFILE_INFO_KEY, UserProfile.localInstance);
         startActivityForResult(toEditProfile, code);
     }

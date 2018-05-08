@@ -49,7 +49,7 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".profile.EditProfile"
+            android:name=".profile.EditProfileActivity"
             android:exported="true"
             android:label="@string/edit_profile"
             android:theme="@style/AppTheme" />
