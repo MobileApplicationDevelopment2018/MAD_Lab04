@@ -34,7 +34,7 @@
     <string name="invalid_location_empty">Il campo città non può essere vuoto</string>
     <string name="discard_changes">Abbandonare le modifiche?</string>
     <string name="incorrect_username">Il campo username è attualmente vuoto.\nPer favore, riempilo</string>
-    <string name="incorrect_location">Il campo città è attualmente vuoto.\nPer favore, riempilo</string>
+    <string name="incorrect_location">Per facore, scegli una città dall\'elenco dei suggerimenti</string>
     <string name="failed_obtain_picture">Si è verificato un errore durante l\'ottenimento dell\'immagine</string>
 
     <string name="navigation_drawer_open">Apri la finestra di navigazione</string>

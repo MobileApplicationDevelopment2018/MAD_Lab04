@@ -21,6 +21,8 @@ import android.support.v4.content.ContextCompat;
 import android.support.v4.content.FileProvider;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.widget.Toolbar;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -79,6 +81,8 @@ public class EditProfile extends AppCompatActivityDialog<EditProfile.DialogID> {
     private boolean isCommitting;
     private AsyncTask<Void, Void, PictureUtilities.CompressedImage> pictureProcessingTask;
 
+    private AdapterView.OnItemClickListener autocompleteClickListener;
+    private OnCompleteListener<PlaceBufferResponse> updatePlaceDetailsCallback;
     private GeoDataClient geoDataClient;
     private PlaceAutocompleteAdapter placeAutocompleteAdapter;
 
@@ -118,8 +122,11 @@ public class EditProfile extends AppCompatActivityDialog<EditProfile.DialogID> {
         fillViews(currentProfile);
         attachListenerHideFloatingActionButton();
 
+        initAutoCompleteListener();
+        initUpdatePlaceDetailsCallback();
+
         geoDataClient = Places.getGeoDataClient(this);
-        location.setOnItemClickListener(mAutocompleteClickListener);
+        location.setOnItemClickListener(autocompleteClickListener);
 
         // Set up the adapter that will retrieve suggestions from the Places Geo Data Client.
         placeAutocompleteAdapter = new PlaceAutocompleteAdapter(this, geoDataClient, null, new AutocompleteFilter.Builder()
@@ -133,6 +140,23 @@ public class EditProfile extends AppCompatActivityDialog<EditProfile.DialogID> {
         username.addTextChangedListener(
                 new TextWatcherUtilities.GenericTextWatcher(username, getString(R.string.invalid_username),
                         string -> !Utilities.isNullOrWhitespace(string)));
+
+        location.addTextChangedListener(
+                new TextWatcher() {
+                    @Override
+                    public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+                    }
+
+                    @Override
+                    public void onTextChanged(CharSequence s, int start, int before, int count) {
+                    }
+
+                    @Override
+                    public void afterTextChanged(Editable s) {
+                        currentProfile.update(null);
+                    }
+                }
+        );
 
         if (savedInstanceState == null && originalProfile == null) {
             Toast.makeText(this, R.string.complete_profile,
@@ -527,27 +551,23 @@ public class EditProfile extends AppCompatActivityDialog<EditProfile.DialogID> {
         DIALOG_ERROR_FAILED_OBTAIN_PICTURE
     }
 
-    private AdapterView.OnItemClickListener mAutocompleteClickListener
-            = new AdapterView.OnItemClickListener() {
-        @Override
-        public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+    private void initAutoCompleteListener() {
+        autocompleteClickListener = (parent, view, position, id) -> {
             final AutocompletePrediction item = placeAutocompleteAdapter.getItem(position);
             final String placeId = item.getPlaceId();
             location.setText(item.getPrimaryText(null));
             Task<PlaceBufferResponse> placeResult = geoDataClient.getPlaceById(placeId);
-            placeResult.addOnCompleteListener(mUpdatePlaceDetailsCallback);
-        }
-    };
+            placeResult.addOnCompleteListener(updatePlaceDetailsCallback);
+        };
+    }
 
-    private OnCompleteListener<PlaceBufferResponse> mUpdatePlaceDetailsCallback
-            = new OnCompleteListener<PlaceBufferResponse>() {
-        @SuppressLint("RestrictedApi")
-        @Override
-        public void onComplete(Task<PlaceBufferResponse> task) {
+    @SuppressLint("RestrictedApi")
+    private void initUpdatePlaceDetailsCallback() {
+        updatePlaceDetailsCallback = task -> {
             PlaceBufferResponse places = task.getResult();
             final Place place = places.get(0);
             currentProfile.update(place);
             places.release();
-        }
-    };
+        };
+    }
 }

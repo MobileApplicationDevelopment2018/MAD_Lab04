@@ -34,7 +34,7 @@
     <string name="invalid_location_empty">Location must not be empty</string>
     <string name="discard_changes">Discard changes?</string>
     <string name="incorrect_username">Username field is currently empty.\nPlease, fill it</string>
-    <string name="incorrect_location">Location field is currently empty.\nPlease, fill it</string>
+    <string name="incorrect_location">Please, choose the location from the suggestions list</string>
     <string name="failed_obtain_picture">Something went wrong while obtaining the picture</string>
     <string name="failed_save_picture">Something went wrong while saving the profile picture.\nPlease, check your internet connection</string>
     <string name="failed_load_data">Something went wrong while retrieving your data. You will be signed out.</string>
