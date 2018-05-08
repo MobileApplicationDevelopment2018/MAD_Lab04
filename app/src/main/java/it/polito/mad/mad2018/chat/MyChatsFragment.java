@@ -1,6 +1,5 @@
 package it.polito.mad.mad2018.chat;
 
-import android.content.Context;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -10,7 +9,6 @@ import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentPagerAdapter;
 import android.support.v4.view.ViewPager;
-import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -21,24 +19,18 @@ import java.util.List;
 import it.polito.mad.mad2018.R;
 
 public class MyChatsFragment extends Fragment {
+
     private TabLayout tabLayout;
     private AppBarLayout appBarLayout;
 
-    public MyChatsFragment() {
-    }
+    public MyChatsFragment() { /* Required empty public constructor */ }
 
     public static MyChatsFragment newInstance() {
         return new MyChatsFragment();
     }
 
     @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        this.setRetainInstance(true);
-    }
-
-    @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+    public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_library, container, false);
 
@@ -47,7 +39,6 @@ public class MyChatsFragment extends Fragment {
 
         tabLayout = (TabLayout) inflater.inflate(R.layout.tab_layout, null);
         tabLayout.setupWithViewPager(viewPager);
-        tabLayout.setTabGravity(TabLayout.GRAVITY_FILL);
 
         return view;
     }
@@ -61,17 +52,6 @@ public class MyChatsFragment extends Fragment {
         getActivity().setTitle(R.string.chat);
         appBarLayout = getActivity().findViewById(R.id.app_bar_layout);
         appBarLayout.addView(tabLayout);
-    }
-
-    @Override
-    public void onSaveInstanceState(@NonNull Bundle outState) {
-        super.onSaveInstanceState(outState);
-        outState.putString("chat", "chat");
-    }
-
-    @Override
-    public void onAttach(Context context) {
-        super.onAttach(context);
     }
 
     @Override

@@ -1,20 +1,15 @@
 package it.polito.mad.mad2018.chat;
 
-import android.content.Intent;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
-import android.text.Editable;
-import android.text.TextWatcher;
-import android.view.MenuItem;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.TextView;
 
-import com.firebase.ui.database.FirebaseRecyclerOptions;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.ValueEventListener;
@@ -23,20 +18,22 @@ import it.polito.mad.mad2018.R;
 import it.polito.mad.mad2018.data.Book;
 import it.polito.mad.mad2018.data.Conversation;
 import it.polito.mad.mad2018.data.UserProfile;
+import it.polito.mad.mad2018.utils.TextWatcherUtilities;
 import it.polito.mad.mad2018.utils.Utilities;
 
 public class SingleChatActivity extends AppCompatActivity {
 
-    private String peerId;
-    private String conversationId;
+    private Conversation conversation;
+    private UserProfile peer;
     private Book book;
+
     private EditText message;
     private TextView noMessages;
     private ImageButton btnSend;
     private RecyclerView messages;
-    private Conversation conversation;
+
     private SingleChatAdapter adapter;
-    private ValueEventListener profileListener, chatListener;
+    private ValueEventListener conversationListener, profileListener, bookListener;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -49,160 +46,156 @@ public class SingleChatActivity extends AppCompatActivity {
         if (getSupportActionBar() != null) {
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
             getSupportActionBar().setDisplayShowHomeEnabled(true);
+            getSupportActionBar().setDisplayUseLogoEnabled(true);
         }
 
-        Intent intent = getIntent();
-        if (intent != null) {
-            conversation = (Conversation) intent.getExtras().get(Conversation.CONVERSATION_KEY);
+        if (savedInstanceState != null) {
+            conversation = (Conversation) savedInstanceState.getSerializable(Conversation.CONVERSATION_KEY);
+            peer = (UserProfile) savedInstanceState.getSerializable(UserProfile.PROFILE_INFO_KEY);
+            book = (Book) savedInstanceState.getSerializable(Book.BOOK_KEY);
+        } else {
+            conversation = (Conversation) getIntent().getSerializableExtra(Conversation.CONVERSATION_KEY);
+            peer = (UserProfile) getIntent().getSerializableExtra(UserProfile.PROFILE_INFO_KEY);
+            book = (Book) getIntent().getSerializableExtra(Book.BOOK_KEY);
+        }
 
-            if(conversation == null){
-                conversationId = (String) intent.getExtras().get(Conversation.CONVERSATION_ID_KEY);
-                book = (Book) intent.getExtras().get(Book.BOOK_KEY);
-                if (conversationId == null) {
-                    conversation = new Conversation(book);
-                    conversationId = conversation.getConversationId();
-                    peerId = book.getOwnerId();
-                }
+        if (conversation == null) {
+            assert peer != null && book != null;
+
+            String conversationId = UserProfile.localInstance.findConversationByBookId(book.getBookId());
+            if (conversationId == null) {
+                conversation = new Conversation(book);
             } else {
-                conversationId = conversation.getConversationId();
-                peerId = conversation.getPeerUserId();
+                setOnConversationLoadedListener();
             }
         }
 
         findViews();
+        setTitle(peer != null ? peer.getUsername() : getString(R.string.app_name));
 
-        btnSend.setOnClickListener(v -> onClickButtonSend());
+        btnSend.setEnabled(false);
+        btnSend.setOnClickListener(v -> {
+            boolean wasNewConversation = conversation.isNew();
+            conversation.sendMessage(message.getText().toString());
+            message.setText(null);
 
+            if (wasNewConversation) {
+                setupMessages();
+            }
+        });
+
+        message.setEnabled(conversation != null);
+        message.addTextChangedListener(new TextWatcherUtilities.GenericTextWatcher(
+                editable -> btnSend.setEnabled(!Utilities.isNullOrWhitespace(editable.toString()))
+        ));
+
+        if (conversation != null && !conversation.isNew()) {
+            setupMessages();
+        }
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+
+        outState.putSerializable(Conversation.CONVERSATION_KEY, conversation);
+        outState.putSerializable(UserProfile.PROFILE_INFO_KEY, peer);
+        outState.putSerializable(Book.BOOK_KEY, book);
+    }
+
+    private void setupMessages() {
         final LinearLayoutManager linearLayoutManager = new LinearLayoutManager(this);
         messages.setLayoutManager(linearLayoutManager);
 
-        final SingleChatAdapter.OnItemCountChangedListener onItemCountChangedListener = (count) -> {
+        adapter = new SingleChatAdapter(conversation.getMessages(), (count) -> {
             noMessages.setVisibility(count == 0 ? View.VISIBLE : View.GONE);
             messages.setVisibility(count == 0 ? View.GONE : View.VISIBLE);
             if (count > 0) {
                 linearLayoutManager.scrollToPosition(count - 1);
             }
-        };
-
-        final SingleChatAdapter.OnItemClickListener onItemClickListener = (view, message) -> { };
-
-        FirebaseRecyclerOptions<Conversation.Message> options = Conversation.getMessages(conversationId);
-        adapter = new SingleChatAdapter(options, onItemClickListener, onItemCountChangedListener);
-        messages.setAdapter(adapter);
-
-        btnSend.setEnabled(false);
-        message.addTextChangedListener(new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-            }
-
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-            }
-
-            @Override
-            public void afterTextChanged(Editable s) {
-                if (Utilities.isNullOrWhitespace(s.toString())) {
-                    btnSend.setEnabled(false);
-                } else{
-                    btnSend.setEnabled(true);
-                }
-            }
         });
-
-    }
-
-    private void onClickButtonSend() {
-        if (conversation == null)
-            return;
-        String msg = message.getText().toString();
-        conversation.sendMessage(msg);
-        message.setText("");
+        messages.setAdapter(adapter);
+        adapter.startListening();
+        message.setEnabled(true);
     }
 
     @Override
     public boolean onSupportNavigateUp() {
-        finish();
+        onBackPressed();
         return true;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        int id = item.getItemId();
-        switch (id) {
-            case android.R.id.home:
-                onBackPressed();
-                return true;
-        }
-        return super.onOptionsItemSelected(item);
     }
 
     @Override
     protected void onStart() {
         super.onStart();
-        adapter.startListening();
-        setOnProfileLoadedListener();
-        setChatListener();
 
+        if (adapter != null) {
+            adapter.startListening();
+        }
+
+        if (peer == null) {
+            setOnProfileLoadedListener();
+        }
+        if (book == null) {
+            setOnBookLoadedListener();
+        }
     }
 
     @Override
     protected void onStop() {
         super.onStop();
-        adapter.stopListening();
+
+        if (adapter != null) {
+            adapter.stopListening();
+        }
+        unsetOnConversationLoadedListener();
         unsetOnProfileLoadedListener();
-        unsetChatListener();
-
+        unsetOnBookLoadedListener();
     }
 
-    @Override
-    public void onBackPressed() {
-        super.onBackPressed();
-    }
-
-    private void findViews(){
+    private void findViews() {
         this.message = this.findViewById(R.id.message_send);
         this.btnSend = this.findViewById(R.id.button_send);
         this.noMessages = this.findViewById(R.id.chat_no_messages);
         this.messages = this.findViewById(R.id.chat_messages);
     }
 
-    private void setChatListener(){
-        Conversation.setOnConversationLoadedListener(conversationId, new ValueEventListener() {
+    private void setOnConversationLoadedListener() {
+        String conversationId = UserProfile.localInstance.findConversationByBookId(book.getBookId());
+        conversationListener = Conversation.setOnConversationLoadedListener(conversationId, new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
-                if(!unsetChatListener())
+                if (!unsetOnConversationLoadedListener())
                     return;
 
                 Conversation.Data data = dataSnapshot.getValue(Conversation.Data.class);
-
-                if(data != null){
-                    adapter.updateMessages(data);
+                if (data != null) {
+                    conversation = new Conversation(conversationId, data);
+                    setupMessages();
                 }
             }
 
             @Override
             public void onCancelled(DatabaseError databaseError) {
-                unsetChatListener();
+                unsetOnConversationLoadedListener();
             }
         });
     }
 
-    private boolean unsetChatListener() {
-        if(chatListener != null){
-            Conversation.unsetOnConversationLoadedListener(conversationId, chatListener);
-            this.chatListener = null;
+    private boolean unsetOnConversationLoadedListener() {
+        if (conversationListener != null) {
+            String conversationId = UserProfile.localInstance.findConversationByBookId(book.getBookId());
+            Conversation.unsetOnConversationLoadedListener(conversationId, conversationListener);
+            this.conversationListener = null;
             return true;
         }
         return false;
     }
 
     private void setOnProfileLoadedListener() {
-        if (peerId == null)
-            return;
 
         this.profileListener = UserProfile.setOnProfileLoadedListener(
-                peerId,
+                conversation.getPeerUserId(),
                 new ValueEventListener() {
                     @Override
                     public void onDataChange(DataSnapshot dataSnapshot) {
@@ -212,9 +205,8 @@ public class SingleChatActivity extends AppCompatActivity {
 
                         UserProfile.Data data = dataSnapshot.getValue(UserProfile.Data.class);
                         if (data != null) {
-                            UserProfile user = new UserProfile(peerId, data);
-
-                            updateTitle(user.getUsername());
+                            peer = new UserProfile(conversation.getPeerUserId(), data);
+                            setTitle(peer.getUsername());
                         }
                     }
 
@@ -225,17 +217,45 @@ public class SingleChatActivity extends AppCompatActivity {
                 });
     }
 
-    private void updateTitle(String username) {
-        setTitle(username);
-    }
-
     private boolean unsetOnProfileLoadedListener() {
         if (this.profileListener != null) {
-            UserProfile.unsetOnProfileLoadedListener(peerId, this.profileListener);
+            UserProfile.unsetOnProfileLoadedListener(conversation.getPeerUserId(), this.profileListener);
             this.profileListener = null;
             return true;
         }
         return false;
     }
 
+    private void setOnBookLoadedListener() {
+
+        this.bookListener = Book.setOnBookLoadedListener(
+                conversation.getBookId(),
+                new ValueEventListener() {
+                    @Override
+                    public void onDataChange(DataSnapshot dataSnapshot) {
+                        if (!unsetOnBookLoadedListener()) {
+                            return;
+                        }
+
+                        Book.Data data = dataSnapshot.getValue(Book.Data.class);
+                        if (data != null) {
+                            book = new Book(conversation.getBookId(), data);
+                        }
+                    }
+
+                    @Override
+                    public void onCancelled(DatabaseError databaseError) {
+                        unsetOnProfileLoadedListener();
+                    }
+                });
+    }
+
+    private boolean unsetOnBookLoadedListener() {
+        if (this.bookListener != null) {
+            Book.unsetOnBookLoadedListener(conversation.getBookId(), this.bookListener);
+            this.bookListener = null;
+            return true;
+        }
+        return false;
+    }
 }

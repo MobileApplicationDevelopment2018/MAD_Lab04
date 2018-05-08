@@ -110,11 +110,13 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="28dp">
+
                         <AutoCompleteTextView
                             android:id="@+id/ep_input_location"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:hint="@string/hint_location"/>
+                            android:hint="@string/hint_location"
+                            android:lines="1" />
 
                     </android.support.design.widget.TextInputLayout>
                 </LinearLayout>

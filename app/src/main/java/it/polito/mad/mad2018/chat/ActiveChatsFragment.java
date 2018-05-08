@@ -2,7 +2,7 @@ package it.polito.mad.mad2018.chat;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.support.annotation.Nullable;
+import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -13,60 +13,44 @@ import android.view.ViewGroup;
 import com.firebase.ui.database.FirebaseRecyclerOptions;
 
 import it.polito.mad.mad2018.R;
+import it.polito.mad.mad2018.data.Book;
 import it.polito.mad.mad2018.data.Conversation;
+import it.polito.mad.mad2018.data.UserProfile;
 
 public class ActiveChatsFragment extends Fragment {
 
     private ChatAdapter adapter;
-    private ChatAdapter.OnItemCountChangedListener onItemCountChangedListener;
 
-    public ActiveChatsFragment() {
-        // Required empty public constructor
-    }
+    public ActiveChatsFragment() { /* Required empty public constructor */ }
 
     public static ActiveChatsFragment newInstance() {
-        ActiveChatsFragment fragment = new ActiveChatsFragment();
-        Bundle args = new Bundle();
-        fragment.setArguments(args);
-        return fragment;
+        return new ActiveChatsFragment();
     }
 
     @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        this.setRetainInstance(true);
-    }
-
-    @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+    public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_active_chats, container, false);
 
-        return view;
-    }
-
-    @Override
-    public void onActivityCreated(@Nullable Bundle savedInstanceState) {
-        super.onActivityCreated(savedInstanceState);
-
-        RecyclerView recyclerView = getActivity().findViewById(R.id.ac_recycler_view);
+        View noChatsView = view.findViewById(R.id.ac_no_active_chats);
+        RecyclerView recyclerView = view.findViewById(R.id.ac_recycler_view);
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
-
-        View noChatsView = getActivity().findViewById(R.id.ac_no_active_chats);
-
-        onItemCountChangedListener = (count) -> {
-            noChatsView.setVisibility(count == 0 ? View.VISIBLE : View.GONE);
-            recyclerView.setVisibility(count == 0 ? View.GONE : View.VISIBLE);
-        };
 
         FirebaseRecyclerOptions<Conversation> options = Conversation.getActiveConversations();
         adapter = new ChatAdapter(options, (v, conversation, peer, book) -> {
             Intent toChat = new Intent(getActivity(), SingleChatActivity.class);
             toChat.putExtra(Conversation.CONVERSATION_KEY, conversation);
+            toChat.putExtra(UserProfile.PROFILE_INFO_KEY, peer);
+            toChat.putExtra(Book.BOOK_KEY, book);
             startActivity(toChat);
-        }, onItemCountChangedListener);
+        }, (count) -> {
+            noChatsView.setVisibility(count == 0 ? View.VISIBLE : View.GONE);
+            recyclerView.setVisibility(count == 0 ? View.GONE : View.VISIBLE);
+        });
 
         recyclerView.setAdapter(adapter);
+
+        return view;
     }
 
     @Override
@@ -80,6 +64,7 @@ public class ActiveChatsFragment extends Fragment {
         super.onStop();
         adapter.stopListening();
     }
-
-
 }
+
+
+

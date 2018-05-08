@@ -7,7 +7,6 @@ import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -27,7 +26,6 @@ import java.util.List;
 import it.polito.mad.mad2018.R;
 import it.polito.mad.mad2018.chat.SingleChatActivity;
 import it.polito.mad.mad2018.data.Book;
-import it.polito.mad.mad2018.data.Conversation;
 import it.polito.mad.mad2018.data.UserProfile;
 import it.polito.mad.mad2018.profile.ShowProfileFragment;
 import it.polito.mad.mad2018.utils.FragmentDialog;
@@ -207,10 +205,8 @@ public class BookInfoFragment extends FragmentDialog<BookInfoFragment.DialogID>
 
         chatButton.setOnClickListener(v -> {
             Intent intent = new Intent(getActivity(), SingleChatActivity.class);
-            intent.putExtra("user_id", owner.getUsername());
+            intent.putExtra(UserProfile.PROFILE_INFO_KEY, owner);
             intent.putExtra(Book.BOOK_KEY, book);
-            Log.d(TAG, "onclicklistener: " + UserProfile.localInstance.findConversationByBookId(book.getBookId()));
-            intent.putExtra(Conversation.CONVERSATION_ID_KEY, UserProfile.localInstance.findConversationByBookId(book.getBookId()));
             startActivity(intent);
         });
     }

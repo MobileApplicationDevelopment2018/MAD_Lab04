@@ -10,31 +10,20 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
-import com.firebase.ui.database.FirebaseRecyclerAdapter;
 import com.firebase.ui.database.FirebaseRecyclerOptions;
 
 import it.polito.mad.mad2018.R;
+import it.polito.mad.mad2018.data.Book;
 import it.polito.mad.mad2018.data.Conversation;
+import it.polito.mad.mad2018.data.UserProfile;
 
 public class ArchivedChatsFragment extends Fragment {
-    private FirebaseRecyclerAdapter<Conversation, ChatAdapter.ChatHolder> adapter;
-    private ChatAdapter.OnItemCountChangedListener onItemCountChangedListener;
+    private ChatAdapter adapter;
 
-    public ArchivedChatsFragment() {
-        // Required empty public constructor
-    }
+    public ArchivedChatsFragment() { /* Required empty public constructor */ }
 
     public static ArchivedChatsFragment newInstance() {
-        ArchivedChatsFragment fragment = new ArchivedChatsFragment();
-        Bundle args = new Bundle();
-        fragment.setArguments(args);
-        return fragment;
-    }
-
-    @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        this.setRetainInstance(true);
+        return new ArchivedChatsFragment();
     }
 
     @Override
@@ -42,24 +31,36 @@ public class ArchivedChatsFragment extends Fragment {
                              Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_archived_chats, container, false);
 
+        View noChatsView = view.findViewById(R.id.ac_no_archived_chats);
         RecyclerView recyclerView = view.findViewById(R.id.ac_recycler_view);
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
-
-        View noChatsView = view.findViewById(R.id.ac_no_archived_chats);
-
-        onItemCountChangedListener = (count) -> {
-            noChatsView.setVisibility(count == 0 ? View.VISIBLE : View.GONE);
-            recyclerView.setVisibility(count == 0 ? View.GONE : View.VISIBLE);
-        };
 
         FirebaseRecyclerOptions<Conversation> options = Conversation.getArchivedConversations();
         adapter = new ChatAdapter(options, (v, conversation, peer, book) -> {
             Intent toChat = new Intent(getActivity(), SingleChatActivity.class);
             toChat.putExtra(Conversation.CONVERSATION_KEY, conversation);
+            toChat.putExtra(UserProfile.PROFILE_INFO_KEY, peer);
+            toChat.putExtra(Book.BOOK_KEY, book);
             startActivity(toChat);
-        }, onItemCountChangedListener);
+        }, (count) -> {
+            noChatsView.setVisibility(count == 0 ? View.VISIBLE : View.GONE);
+            recyclerView.setVisibility(count == 0 ? View.GONE : View.VISIBLE);
+        });
+
         recyclerView.setAdapter(adapter);
 
         return view;
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        adapter.startListening();
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+        adapter.stopListening();
     }
 }

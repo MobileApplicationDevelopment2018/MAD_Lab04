@@ -21,11 +21,8 @@ import android.support.v4.content.ContextCompat;
 import android.support.v4.content.FileProvider;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.widget.Toolbar;
-import android.text.Editable;
-import android.text.TextWatcher;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.View;
 import android.widget.AdapterView;
 import android.widget.AutoCompleteTextView;
 import android.widget.EditText;
@@ -138,25 +135,11 @@ public class EditProfile extends AppCompatActivityDialog<EditProfile.DialogID> {
         floatingActionButton.setOnClickListener(v -> this.openDialog(DialogID.DIALOG_CHOOSE_PICTURE, true));
 
         username.addTextChangedListener(
-                new TextWatcherUtilities.GenericTextWatcher(username, getString(R.string.invalid_username),
+                new TextWatcherUtilities.TextWatcherError(username, getString(R.string.invalid_username),
                         string -> !Utilities.isNullOrWhitespace(string)));
 
-        location.addTextChangedListener(
-                new TextWatcher() {
-                    @Override
-                    public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-                    }
-
-                    @Override
-                    public void onTextChanged(CharSequence s, int start, int before, int count) {
-                    }
-
-                    @Override
-                    public void afterTextChanged(Editable s) {
-                        currentProfile.update(null);
-                    }
-                }
-        );
+        location.addTextChangedListener(new TextWatcherUtilities.GenericTextWatcher(
+                editable -> currentProfile.update(null)));
 
         if (savedInstanceState == null && originalProfile == null) {
             Toast.makeText(this, R.string.complete_profile,
@@ -541,16 +524,6 @@ public class EditProfile extends AppCompatActivityDialog<EditProfile.DialogID> {
         });
     }
 
-    public enum DialogID {
-        DIALOG_CHOOSE_PICTURE,
-        DIALOG_SAVING,
-        DIALOG_CONFIRM_EXIT,
-        DIALOG_ERROR_INCORRECT_USERNAME,
-        DIALOG_ERROR_INCORRECT_LOCATION,
-        DIALOG_ERROR_FAILED_SAVE_DATA,
-        DIALOG_ERROR_FAILED_OBTAIN_PICTURE
-    }
-
     private void initAutoCompleteListener() {
         autocompleteClickListener = (parent, view, position, id) -> {
             final AutocompletePrediction item = placeAutocompleteAdapter.getItem(position);
@@ -569,5 +542,15 @@ public class EditProfile extends AppCompatActivityDialog<EditProfile.DialogID> {
             currentProfile.update(place);
             places.release();
         };
+    }
+
+    public enum DialogID {
+        DIALOG_CHOOSE_PICTURE,
+        DIALOG_SAVING,
+        DIALOG_CONFIRM_EXIT,
+        DIALOG_ERROR_INCORRECT_USERNAME,
+        DIALOG_ERROR_INCORRECT_LOCATION,
+        DIALOG_ERROR_FAILED_SAVE_DATA,
+        DIALOG_ERROR_FAILED_OBTAIN_PICTURE
     }
 }

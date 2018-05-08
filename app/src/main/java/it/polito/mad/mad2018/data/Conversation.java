@@ -129,6 +129,10 @@ public class Conversation implements Serializable {
         return Conversation.getMessages(this.conversationId);
     }
 
+    public boolean isNew() {
+        return this.data.messages.size() == 0;
+    }
+
     public boolean isBookOwner() {
         return Utilities.equals(Conversation.localUser.getUserId(), this.data.owner);
     }
