@@ -73,17 +73,6 @@ public class ShowProfileFragment extends Fragment {
         // Fill the views with the data
         fillViews(profile);
 
-        // MailTo button
-        final ImageButton mailToButton = getView().findViewById(R.id.sp_mail_icon);
-        mailToButton.setVisibility(profile.isLocal() ? View.GONE : View.VISIBLE);
-        mailToButton.setOnClickListener(v -> {
-            Uri uri = Uri.parse("mailto:" + profile.getEmail());
-            Intent mailTo = new Intent(Intent.ACTION_SENDTO, uri);
-            if (mailTo.resolveActivity(getActivity().getPackageManager()) != null) {
-                startActivity(mailTo);
-            }
-        });
-
         // ShowCity button
         final ImageButton showCityButton = getView().findViewById(R.id.sp_locate_icon);
         showCityButton.setEnabled(profile.getLocation() != null);

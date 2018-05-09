@@ -410,10 +410,10 @@ public class Book implements Serializable {
 
         public static List<BookConditions> values() {
             return Arrays.asList(
-                    new BookConditions(MINT),
-                    new BookConditions(GOOD),
+                    new BookConditions(POOR),
                     new BookConditions(FAIR),
-                    new BookConditions(POOR)
+                    new BookConditions(GOOD),
+                    new BookConditions(MINT)
             );
         }
 
