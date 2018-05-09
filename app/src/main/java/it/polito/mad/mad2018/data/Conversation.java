@@ -1,6 +1,7 @@
 package it.polito.mad.mad2018.data;
 
 import android.support.annotation.NonNull;
+import android.text.format.DateUtils;
 
 import com.firebase.ui.database.FirebaseRecyclerOptions;
 import com.google.android.gms.tasks.Task;
@@ -212,16 +213,12 @@ public class Conversation implements Serializable {
         }
 
         public String getDateTime() {
-            // TODO: improve the style (e.g. use today, yesterday and so on)
-            // The best approach depends on how it will be displayed
-
-            DateFormat dateFormat = android.text.format.DateFormat.
-                    getDateFormat(MAD2018Application.applicationContext);
-            DateFormat timeFormat = android.text.format.DateFormat.
-                    getTimeFormat(MAD2018Application.applicationContext);
-
-            Date date = new Date(message.getTimestamp());
-            return dateFormat.format(date) + " " + timeFormat.format(date);
+            long now = System.currentTimeMillis();
+            long messageTimeStamp = message.getTimestamp();
+            if(messageTimeStamp > now) {
+                now = messageTimeStamp;
+            }
+            return DateUtils.getRelativeTimeSpanString(messageTimeStamp, now, DateUtils.MINUTE_IN_MILLIS).toString();
         }
     }
 
