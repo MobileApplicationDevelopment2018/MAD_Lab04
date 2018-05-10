@@ -32,9 +32,11 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.ValueEventListener;
+import com.google.firebase.iid.FirebaseInstanceId;
 
 import java.util.Arrays;
 
+import it.polito.mad.mad2018.chat.ChatIDService;
 import it.polito.mad.mad2018.chat.MyChatsFragment;
 import it.polito.mad.mad2018.data.UserProfile;
 import it.polito.mad.mad2018.explore.ExploreFragment;
@@ -308,6 +310,7 @@ public class MainActivity extends AppCompatActivityDialog<MainActivity.DialogID>
                     showDefaultFragment();
                     showToast(getString(R.string.sign_in_welcome_back) + " " + UserProfile.localInstance.getUsername());
                 }
+                ChatIDService.uploadToken(UserProfile.localInstance, FirebaseInstanceId.getInstance().getToken());
             }
 
             @Override

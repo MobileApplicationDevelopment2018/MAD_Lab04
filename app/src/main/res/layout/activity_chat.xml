@@ -11,11 +11,19 @@
         android:layout_height="match_parent"
         android:orientation="vertical">
 
+        <ProgressBar
+            android:id="@+id/chat_loading"
+            style="?android:attr/progressBarStyleLarge"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center" />
+
         <android.support.v7.widget.RecyclerView
             android:id="@+id/chat_messages"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:layout_above="@id/line"/>
+            android:layout_above="@id/line"
+            android:visibility="gone" />
 
         <TextView
             android:id="@+id/chat_no_messages"
@@ -23,7 +31,8 @@
             android:layout_height="match_parent"
             android:gravity="center"
             android:text="@string/no_messages"
-            android:textAppearance="@style/TextAppearance.AppCompat.Display1" />
+            android:textAppearance="@style/TextAppearance.AppCompat.Display1"
+            android:visibility="gone" />
 
         <View
             android:id="@+id/line"
@@ -38,11 +47,11 @@
             android:layout_height="45dp"
             android:layout_alignParentBottom="true"
             android:layout_alignParentEnd="true"
-            android:background="#00000000"
+            android:background="@null"
             android:padding="10dp"
             android:scaleType="centerInside"
             android:src="@drawable/ic_send_black_24dp"
-            android:tint="@color/light_green_500" />
+            android:tint="@color/colorPrimary" />
 
         <EditText
             android:id="@+id/message_send"
@@ -54,7 +63,6 @@
             android:layout_marginStart="8dp"
             android:layout_toStartOf="@id/button_send"
             android:inputType="textLongMessage"
-            android:maxLines="1"
             android:textColorHint="#aeafaf"
             android:textSize="15sp" />
 

@@ -166,4 +166,7 @@
     <string name="no_messages">No messages</string>
     <string name="loading">Loading…</string>
     <string name="delete_book">delete book</string>
+
+    <string name="notifications_admin_channel_name">Global channel</string>
+    <string name="notifications_admin_channel_description">Notifications sent from the app admin</string>
 </resources>

@@ -9,6 +9,7 @@ import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ProgressBar;
 
 import com.firebase.ui.database.FirebaseRecyclerOptions;
 
@@ -35,6 +36,7 @@ public class ActiveChatsFragment extends Fragment {
         View noChatsView = view.findViewById(R.id.ac_no_active_chats);
         RecyclerView recyclerView = view.findViewById(R.id.ac_recycler_view);
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
+        ProgressBar loading = view.findViewById(R.id.active_chats_loading);
 
         FirebaseRecyclerOptions<Conversation> options = Conversation.getActiveConversations();
         adapter = new ChatAdapter(options, (v, conversation, peer, book) -> {
@@ -44,6 +46,7 @@ public class ActiveChatsFragment extends Fragment {
             toChat.putExtra(Book.BOOK_KEY, book);
             startActivity(toChat);
         }, (count) -> {
+            loading.setVisibility(View.GONE);
             noChatsView.setVisibility(count == 0 ? View.VISIBLE : View.GONE);
             recyclerView.setVisibility(count == 0 ? View.GONE : View.VISIBLE);
         });

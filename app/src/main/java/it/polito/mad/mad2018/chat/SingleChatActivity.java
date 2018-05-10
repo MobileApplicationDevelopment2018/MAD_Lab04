@@ -8,6 +8,7 @@ import android.support.v7.widget.Toolbar;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.google.firebase.database.DataSnapshot;
@@ -29,6 +30,7 @@ public class SingleChatActivity extends AppCompatActivity {
 
     private EditText message;
     private TextView noMessages;
+    private ProgressBar loading;
     private ImageButton btnSend;
     private RecyclerView messages;
 
@@ -108,6 +110,7 @@ public class SingleChatActivity extends AppCompatActivity {
         messages.setLayoutManager(linearLayoutManager);
 
         adapter = new SingleChatAdapter(conversation.getMessages(), (count) -> {
+            loading.setVisibility(View.GONE);
             noMessages.setVisibility(count == 0 ? View.VISIBLE : View.GONE);
             messages.setVisibility(count == 0 ? View.GONE : View.VISIBLE);
             if (count > 0) {
@@ -154,10 +157,11 @@ public class SingleChatActivity extends AppCompatActivity {
     }
 
     private void findViews() {
-        this.message = this.findViewById(R.id.message_send);
-        this.btnSend = this.findViewById(R.id.button_send);
-        this.noMessages = this.findViewById(R.id.chat_no_messages);
-        this.messages = this.findViewById(R.id.chat_messages);
+        message = findViewById(R.id.message_send);
+        btnSend = findViewById(R.id.button_send);
+        noMessages = findViewById(R.id.chat_no_messages);
+        messages = findViewById(R.id.chat_messages);
+        loading = findViewById(R.id.chat_loading);
     }
 
     private void setOnConversationLoadedListener() {
