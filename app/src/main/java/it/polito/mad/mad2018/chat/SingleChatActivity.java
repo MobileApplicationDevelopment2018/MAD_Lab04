@@ -237,8 +237,8 @@ public class SingleChatActivity extends AppCompatActivity {
     }
 
     private boolean unsetOnLocalProfileLoadedListener() {
-        if (this.localProfileListener != null && conversation != null) {
-            UserProfile.unsetOnProfileLoadedListener(conversation.getPeerUserId(), this.localProfileListener);
+        if (this.localProfileListener != null) {
+            UserProfile.unsetOnProfileLoadedListener(this.localProfileListener);
             this.localProfileListener = null;
             return true;
         }
