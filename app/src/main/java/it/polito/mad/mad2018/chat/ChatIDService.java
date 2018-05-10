@@ -18,12 +18,10 @@ public class ChatIDService extends FirebaseInstanceIdService {
     public void onTokenRefresh() {
 
         super.onTokenRefresh();
-        Log.d(TAG, "onTokenRefresh");
         String refreshedToken = FirebaseInstanceId.getInstance().getToken();
 
         if (refreshedToken != null && UserProfile.localInstance != null) {
             uploadToken(UserProfile.localInstance, refreshedToken);
-            Log.d(TAG, "Refreshed token: " + refreshedToken);
         }
     }
 

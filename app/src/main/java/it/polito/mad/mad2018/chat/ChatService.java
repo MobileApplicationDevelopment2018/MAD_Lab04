@@ -1,15 +1,18 @@
 package it.polito.mad.mad2018.chat;
 
+import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
-import android.app.Service;
+import android.app.PendingIntent;
 import android.content.Context;
+import android.content.Intent;
 import android.graphics.Color;
 import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.Build;
 import android.support.annotation.RequiresApi;
 import android.support.v4.app.NotificationCompat;
+import android.support.v4.app.TaskStackBuilder;
 
 import com.google.firebase.messaging.FirebaseMessagingService;
 import com.google.firebase.messaging.RemoteMessage;
@@ -17,13 +20,22 @@ import com.google.firebase.messaging.RemoteMessage;
 import java.util.Random;
 
 import it.polito.mad.mad2018.R;
+import it.polito.mad.mad2018.data.Conversation;
 
 public class ChatService extends FirebaseMessagingService {
 
     private static final String ADMIN_CHANNEL_ID ="admin_channel";
+    //private final static String GROUP_BOOKS_CHAT = "it.polito.mad.mad2018.chat.BOOKS_CHAT";
     private NotificationManager notificationManager;
 
     @Override public void onMessageReceived(RemoteMessage remoteMessage) {
+
+        Intent resultIntent = new Intent(this, SingleChatActivity.class);
+        String conversationId = remoteMessage.getData().get("conversationId");
+        resultIntent.putExtra(Conversation.CONVERSATION_ID_KEY, conversationId);
+        TaskStackBuilder stackBuilder = TaskStackBuilder.create(this);
+        stackBuilder.addNextIntentWithParentStack(resultIntent);
+        PendingIntent resultPendingIntent = stackBuilder.getPendingIntent(0, PendingIntent.FLAG_UPDATE_CURRENT);
 
         notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
 
@@ -33,16 +45,31 @@ public class ChatService extends FirebaseMessagingService {
         }
         int notificationId = new Random().nextInt(60000);
 
-        Uri defaultSoundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
-        NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(this, ADMIN_CHANNEL_ID)
-                .setSmallIcon(R.drawable.ic_notification_24dp)  //a resource for your custom small icon
-                .setContentTitle(remoteMessage.getData().get("title")) //the "title" value you sent in your notification
-                .setContentText(remoteMessage.getData().get("message")) //ditto
-                .setGroup(remoteMessage.getFrom())
-                .setAutoCancel(true)  //dismisses the notification on click
-                .setSound(defaultSoundUri);
+        Notification parentMessageNotification = new NotificationCompat.Builder(this, ADMIN_CHANNEL_ID)
+                .setSmallIcon(R.drawable.ic_notification_24dp)
+                //.setContentTitle(title)
+                //.setContentText(content)
+                .setGroupSummary(true)
+                .setGroup(conversationId)
+                .setAutoCancel(true)
+                //.setStyle(new NotificationCompat.BigTextStyle().bigText(content))
+                .setContentIntent(resultPendingIntent)
+                .build();
 
-        notificationManager.notify(notificationId, notificationBuilder.build());
+        //conversationId, title, message
+        Uri defaultSoundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
+        Notification childMessageNotification = new NotificationCompat.Builder(this, ADMIN_CHANNEL_ID)
+                .setSmallIcon(R.drawable.ic_notification_24dp)
+                .setContentTitle(remoteMessage.getData().get("title"))
+                .setContentText(remoteMessage.getData().get("message"))
+                .setGroup(conversationId)
+                .setAutoCancel(true)  //dismisses the notification on click
+                .setSound(defaultSoundUri)
+                .setContentIntent(resultPendingIntent)
+                .build();
+
+        notificationManager.notify(conversationId.hashCode(), parentMessageNotification);
+        notificationManager.notify(notificationId, childMessageNotification);
 
     }
 

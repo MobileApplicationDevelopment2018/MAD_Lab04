@@ -14,7 +14,9 @@ import android.widget.TextView;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.ValueEventListener;
+import com.google.firebase.iid.FirebaseInstanceId;
 
+import it.polito.mad.mad2018.MainActivity;
 import it.polito.mad.mad2018.R;
 import it.polito.mad.mad2018.data.Book;
 import it.polito.mad.mad2018.data.Conversation;
@@ -27,6 +29,7 @@ public class SingleChatActivity extends AppCompatActivity {
     private Conversation conversation;
     private UserProfile peer;
     private Book book;
+    private String conversationId;
 
     private EditText message;
     private TextView noMessages;
@@ -36,6 +39,7 @@ public class SingleChatActivity extends AppCompatActivity {
 
     private SingleChatAdapter adapter;
     private ValueEventListener conversationListener, profileListener, bookListener;
+    private ValueEventListener localProfileListener;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -55,21 +59,18 @@ public class SingleChatActivity extends AppCompatActivity {
             conversation = (Conversation) savedInstanceState.getSerializable(Conversation.CONVERSATION_KEY);
             peer = (UserProfile) savedInstanceState.getSerializable(UserProfile.PROFILE_INFO_KEY);
             book = (Book) savedInstanceState.getSerializable(Book.BOOK_KEY);
+            conversationId = savedInstanceState.getString(Conversation.CONVERSATION_ID_KEY);
         } else {
             conversation = (Conversation) getIntent().getSerializableExtra(Conversation.CONVERSATION_KEY);
             peer = (UserProfile) getIntent().getSerializableExtra(UserProfile.PROFILE_INFO_KEY);
             book = (Book) getIntent().getSerializableExtra(Book.BOOK_KEY);
+            conversationId = getIntent().getStringExtra(Conversation.CONVERSATION_ID_KEY);
         }
 
-        if (conversation == null) {
-            assert peer != null && book != null;
-
-            String conversationId = UserProfile.localInstance.findConversationByBookId(book.getBookId());
-            if (conversationId == null) {
-                conversation = new Conversation(book);
-            } else {
-                setOnConversationLoadedListener();
-            }
+        if(UserProfile.localInstance != null) {
+            init();
+        } else {
+            setOnLocalProfileLoadedListener();
         }
 
         findViews();
@@ -103,6 +104,7 @@ public class SingleChatActivity extends AppCompatActivity {
         outState.putSerializable(Conversation.CONVERSATION_KEY, conversation);
         outState.putSerializable(UserProfile.PROFILE_INFO_KEY, peer);
         outState.putSerializable(Book.BOOK_KEY, book);
+        outState.putSerializable(Conversation.CONVERSATION_ID_KEY, conversationId);
     }
 
     private void setupMessages() {
@@ -135,13 +137,6 @@ public class SingleChatActivity extends AppCompatActivity {
         if (adapter != null) {
             adapter.startListening();
         }
-
-        if (peer == null) {
-            setOnProfileLoadedListener();
-        }
-        if (book == null) {
-            setOnBookLoadedListener();
-        }
     }
 
     @Override
@@ -153,6 +148,7 @@ public class SingleChatActivity extends AppCompatActivity {
         }
         unsetOnConversationLoadedListener();
         unsetOnProfileLoadedListener();
+        unsetOnLocalProfileLoadedListener();
         unsetOnBookLoadedListener();
     }
 
@@ -165,7 +161,7 @@ public class SingleChatActivity extends AppCompatActivity {
     }
 
     private void setOnConversationLoadedListener() {
-        String conversationId = UserProfile.localInstance.findConversationByBookId(book.getBookId());
+
         conversationListener = Conversation.setOnConversationLoadedListener(conversationId, new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
@@ -175,6 +171,12 @@ public class SingleChatActivity extends AppCompatActivity {
                 Conversation.Data data = dataSnapshot.getValue(Conversation.Data.class);
                 if (data != null) {
                     conversation = new Conversation(conversationId, data);
+                    if (peer == null) {
+                        setOnProfileLoadedListener();
+                    }
+                    if (book == null) {
+                        setOnBookLoadedListener();
+                    }
                     setupMessages();
                 }
             }
@@ -188,13 +190,61 @@ public class SingleChatActivity extends AppCompatActivity {
 
     private boolean unsetOnConversationLoadedListener() {
         if (conversationListener != null) {
-            String conversationId = UserProfile.localInstance.findConversationByBookId(book.getBookId());
+
             Conversation.unsetOnConversationLoadedListener(conversationId, conversationListener);
             this.conversationListener = null;
             return true;
         }
         return false;
     }
+
+    private void setOnLocalProfileLoadedListener() {
+
+        this.localProfileListener = UserProfile.setOnProfileLoadedListener(
+                new ValueEventListener() {
+                    @Override
+                    public void onDataChange(DataSnapshot dataSnapshot) {
+                        if (!unsetOnLocalProfileLoadedListener()) {
+                            return;
+                        }
+
+                        UserProfile.Data data = dataSnapshot.getValue(UserProfile.Data.class);
+                        if (data != null) {
+                            UserProfile.localInstance = new UserProfile(data);
+                            init();
+                        }
+                    }
+
+                    @Override
+                    public void onCancelled(DatabaseError databaseError) {
+                        unsetOnLocalProfileLoadedListener();
+                    }
+                });
+    }
+
+    private void init() {
+        if (conversation == null) {
+            if (conversationId == null) {
+                conversationId = UserProfile.localInstance.findConversationByBookId(book.getBookId());
+                if (conversationId == null) {
+                    conversation = new Conversation(book);
+                    conversationId = conversation.getConversationId();
+                }
+            } else {
+                setOnConversationLoadedListener();
+            }
+        }
+    }
+
+    private boolean unsetOnLocalProfileLoadedListener() {
+        if (this.localProfileListener != null && conversation != null) {
+            UserProfile.unsetOnProfileLoadedListener(conversation.getPeerUserId(), this.localProfileListener);
+            this.localProfileListener = null;
+            return true;
+        }
+        return false;
+    }
+
 
     private void setOnProfileLoadedListener() {
 

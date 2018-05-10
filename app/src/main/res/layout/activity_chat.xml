@@ -62,7 +62,7 @@
             android:layout_below="@id/line"
             android:layout_marginStart="8dp"
             android:layout_toStartOf="@id/button_send"
-            android:inputType="textLongMessage"
+            android:inputType="textMultiLine"
             android:textColorHint="#aeafaf"
             android:textSize="15sp" />
 
