@@ -67,12 +67,6 @@ public class SingleChatActivity extends AppCompatActivity {
             conversationId = getIntent().getStringExtra(Conversation.CONVERSATION_ID_KEY);
         }
 
-        if(UserProfile.localInstance != null) {
-            init();
-        } else {
-            setOnLocalProfileLoadedListener();
-        }
-
         findViews();
         setTitle(peer != null ? peer.getUsername() : getString(R.string.app_name));
 
@@ -133,6 +127,12 @@ public class SingleChatActivity extends AppCompatActivity {
     @Override
     protected void onStart() {
         super.onStart();
+
+        if(UserProfile.localInstance != null) {
+            init();
+        } else {
+            setOnLocalProfileLoadedListener();
+        }
 
         if (adapter != null) {
             adapter.startListening();
@@ -232,6 +232,13 @@ public class SingleChatActivity extends AppCompatActivity {
                 }
             } else {
                 setOnConversationLoadedListener();
+            }
+        } else {
+            if (peer == null) {
+                setOnProfileLoadedListener();
+            }
+            if (book == null) {
+                setOnBookLoadedListener();
             }
         }
     }
