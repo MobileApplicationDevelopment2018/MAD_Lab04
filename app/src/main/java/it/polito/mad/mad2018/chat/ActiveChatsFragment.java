@@ -2,6 +2,7 @@ package it.polito.mad.mad2018.chat;
 
 import android.app.AlertDialog;
 import android.app.Dialog;
+import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
@@ -21,8 +22,7 @@ import it.polito.mad.mad2018.R;
 import it.polito.mad.mad2018.data.Book;
 import it.polito.mad.mad2018.data.Conversation;
 import it.polito.mad.mad2018.data.UserProfile;
-
-import static android.support.v7.widget.helper.ItemTouchHelper.LEFT;
+import it.polito.mad.mad2018.utils.SwipeToActionCallback;
 
 public class ActiveChatsFragment extends Fragment {
 
@@ -63,7 +63,8 @@ public class ActiveChatsFragment extends Fragment {
 
         recyclerView.setAdapter(adapter);
 
-        ItemTouchHelper itemTouchhelper = new ItemTouchHelper(new SwipeController());
+        assert getContext() != null;
+        ItemTouchHelper itemTouchhelper = new ItemTouchHelper(new SwipeController(getContext()));
         itemTouchhelper.attachToRecyclerView(recyclerView);
 
         return view;
@@ -95,19 +96,11 @@ public class ActiveChatsFragment extends Fragment {
         }
     }
 
-    private class SwipeController extends ItemTouchHelper.Callback {
+    private class SwipeController extends SwipeToActionCallback {
 
-        @Override
-        public int getMovementFlags(RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder) {
-            return makeMovementFlags(0, LEFT);
+        SwipeController(@NonNull Context context) {
+            super(context, R.drawable.ic_archive_white_24dp, R.color.colorAccent);
         }
-
-        @Override
-        public boolean onMove(RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder,
-                              RecyclerView.ViewHolder target) {
-            return false;
-        }
-
 
         @Override
         public void onSwiped(RecyclerView.ViewHolder viewHolder, int direction) {
