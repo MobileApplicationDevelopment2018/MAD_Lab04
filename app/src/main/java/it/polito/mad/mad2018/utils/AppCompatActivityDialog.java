@@ -37,7 +37,7 @@ public abstract class AppCompatActivityDialog<E extends Enum<E>> extends AppComp
     }
 
     @Override
-    public void onSaveInstanceState(Bundle outState) {
+    protected void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
 
         if (dialogPersist && dialogId != null &&

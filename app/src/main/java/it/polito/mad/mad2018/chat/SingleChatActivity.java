@@ -1,45 +1,49 @@
 package it.polito.mad.mad2018.chat;
 
+import android.app.AlertDialog;
+import android.app.Dialog;
 import android.os.Bundle;
-import android.support.v7.app.AppCompatActivity;
+import android.os.Handler;
+import android.support.annotation.NonNull;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageButton;
-import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.ValueEventListener;
-import com.google.firebase.iid.FirebaseInstanceId;
 
-import it.polito.mad.mad2018.MainActivity;
 import it.polito.mad.mad2018.R;
 import it.polito.mad.mad2018.data.Book;
 import it.polito.mad.mad2018.data.Conversation;
+import it.polito.mad.mad2018.data.LocalUserProfile;
 import it.polito.mad.mad2018.data.UserProfile;
+import it.polito.mad.mad2018.utils.AppCompatActivityDialog;
 import it.polito.mad.mad2018.utils.TextWatcherUtilities;
 import it.polito.mad.mad2018.utils.Utilities;
 
-public class SingleChatActivity extends AppCompatActivity {
+public class SingleChatActivity extends AppCompatActivityDialog<SingleChatActivity.DialogID> {
 
     private Conversation conversation;
     private UserProfile peer;
     private Book book;
     private String conversationId;
 
-    private EditText message;
-    private TextView noMessages;
-    private ProgressBar loading;
-    private ImageButton btnSend;
-    private RecyclerView messages;
+    private EditText editTextMessage;
+    private TextView viewNoMessages;
+    private ImageButton buttonSend;
+    private RecyclerView recyclerViewMessages;
 
     private SingleChatAdapter adapter;
     private ValueEventListener conversationListener, profileListener, bookListener;
     private ValueEventListener localProfileListener;
+
+    private Handler handlerUpdateMessageTime;
+    private Runnable runnableUpdateMessageTime;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -70,25 +74,20 @@ public class SingleChatActivity extends AppCompatActivity {
         findViews();
         setTitle(peer != null ? peer.getUsername() : getString(R.string.app_name));
 
-        btnSend.setEnabled(false);
-        btnSend.setOnClickListener(v -> {
+        buttonSend.setEnabled(false);
+        buttonSend.setOnClickListener(v -> {
             boolean wasNewConversation = conversation.isNew();
-            conversation.sendMessage(message.getText().toString());
-            message.setText(null);
+            conversation.sendMessage(editTextMessage.getText().toString());
+            editTextMessage.setText(null);
 
             if (wasNewConversation) {
                 setupMessages();
             }
         });
 
-        message.setEnabled(conversation != null);
-        message.addTextChangedListener(new TextWatcherUtilities.GenericTextWatcher(
-                editable -> btnSend.setEnabled(!Utilities.isNullOrWhitespace(editable.toString()))
+        editTextMessage.addTextChangedListener(new TextWatcherUtilities.GenericTextWatcher(
+                editable -> buttonSend.setEnabled(!Utilities.isNullOrWhitespace(editable.toString()))
         ));
-
-        if (conversation != null && !conversation.isNew()) {
-            setupMessages();
-        }
     }
 
     @Override
@@ -103,19 +102,28 @@ public class SingleChatActivity extends AppCompatActivity {
 
     private void setupMessages() {
         final LinearLayoutManager linearLayoutManager = new LinearLayoutManager(this);
-        messages.setLayoutManager(linearLayoutManager);
+        recyclerViewMessages.setLayoutManager(linearLayoutManager);
 
         adapter = new SingleChatAdapter(conversation.getMessages(), (count) -> {
-            loading.setVisibility(View.GONE);
-            noMessages.setVisibility(count == 0 ? View.VISIBLE : View.GONE);
-            messages.setVisibility(count == 0 ? View.GONE : View.VISIBLE);
+            viewNoMessages.setVisibility(count == 0 ? View.VISIBLE : View.GONE);
+            recyclerViewMessages.setVisibility(count == 0 ? View.GONE : View.VISIBLE);
             if (count > 0) {
-                linearLayoutManager.scrollToPosition(count - 1);
+                linearLayoutManager.scrollToPosition(count - 1 - conversation.getUnreadMessagesCount());
             }
+            conversation.setMessagesAllRead();
         });
-        messages.setAdapter(adapter);
+        recyclerViewMessages.setAdapter(adapter);
         adapter.startListening();
-        message.setEnabled(true);
+        editTextMessage.setEnabled(true);
+
+        conversation.startArchivedListener(() -> openDialog(DialogID.DIALOG_ARCHIVED, true));
+
+        runnableUpdateMessageTime = () -> {
+            adapter.notifyDataSetChanged();
+            handlerUpdateMessageTime.postDelayed(runnableUpdateMessageTime, Conversation.UPDATE_TIME);
+        };
+        handlerUpdateMessageTime = new Handler();
+        handlerUpdateMessageTime.postDelayed(runnableUpdateMessageTime, Conversation.UPDATE_TIME);
     }
 
     @Override
@@ -128,7 +136,7 @@ public class SingleChatActivity extends AppCompatActivity {
     protected void onStart() {
         super.onStart();
 
-        if(UserProfile.localInstance != null) {
+        if (LocalUserProfile.getInstance() != null) {
             init();
         } else {
             setOnLocalProfileLoadedListener();
@@ -136,6 +144,12 @@ public class SingleChatActivity extends AppCompatActivity {
 
         if (adapter != null) {
             adapter.startListening();
+        }
+
+        updateViewsVisibility();
+        editTextMessage.setEnabled(conversation != null);
+        if (conversation != null && !conversation.isNew()) {
+            setupMessages();
         }
     }
 
@@ -146,6 +160,13 @@ public class SingleChatActivity extends AppCompatActivity {
         if (adapter != null) {
             adapter.stopListening();
         }
+        if (conversation != null) {
+            conversation.stopArchivedListener();
+        }
+        if (handlerUpdateMessageTime != null && runnableUpdateMessageTime != null) {
+            handlerUpdateMessageTime.removeCallbacks(runnableUpdateMessageTime);
+        }
+
         unsetOnConversationLoadedListener();
         unsetOnProfileLoadedListener();
         unsetOnLocalProfileLoadedListener();
@@ -153,11 +174,21 @@ public class SingleChatActivity extends AppCompatActivity {
     }
 
     private void findViews() {
-        message = findViewById(R.id.message_send);
-        btnSend = findViewById(R.id.button_send);
-        noMessages = findViewById(R.id.chat_no_messages);
-        messages = findViewById(R.id.chat_messages);
-        loading = findViewById(R.id.chat_loading);
+        editTextMessage = findViewById(R.id.message_send);
+        buttonSend = findViewById(R.id.button_send);
+        viewNoMessages = findViewById(R.id.chat_no_messages);
+        recyclerViewMessages = findViewById(R.id.chat_messages);
+    }
+
+    private void updateViewsVisibility() {
+        findViewById(R.id.chat_main_layout).setVisibility(conversation == null ? View.GONE : View.VISIBLE);
+        findViewById(R.id.chat_loading).setVisibility(conversation == null ? View.VISIBLE : View.GONE);
+
+        if (conversation != null) {
+            findViewById(R.id.chat_line).setVisibility(conversation.isArchived() ? View.GONE : View.VISIBLE);
+            editTextMessage.setVisibility(conversation.isArchived() ? View.GONE : View.VISIBLE);
+            buttonSend.setVisibility(conversation.isArchived() ? View.GONE : View.VISIBLE);
+        }
     }
 
     private void setOnConversationLoadedListener() {
@@ -177,6 +208,8 @@ public class SingleChatActivity extends AppCompatActivity {
                     if (book == null) {
                         setOnBookLoadedListener();
                     }
+
+                    updateViewsVisibility();
                     setupMessages();
                 }
             }
@@ -200,7 +233,7 @@ public class SingleChatActivity extends AppCompatActivity {
 
     private void setOnLocalProfileLoadedListener() {
 
-        this.localProfileListener = UserProfile.setOnProfileLoadedListener(
+        this.localProfileListener = LocalUserProfile.setOnProfileLoadedListener(
                 new ValueEventListener() {
                     @Override
                     public void onDataChange(DataSnapshot dataSnapshot) {
@@ -210,7 +243,7 @@ public class SingleChatActivity extends AppCompatActivity {
 
                         UserProfile.Data data = dataSnapshot.getValue(UserProfile.Data.class);
                         if (data != null) {
-                            UserProfile.localInstance = new UserProfile(data);
+                            LocalUserProfile.setInstance(new LocalUserProfile(data));
                             init();
                         }
                     }
@@ -225,13 +258,13 @@ public class SingleChatActivity extends AppCompatActivity {
     private void init() {
         if (conversation == null) {
             if (conversationId == null) {
-                conversationId = UserProfile.localInstance.findConversationByBookId(book.getBookId());
+                conversationId = LocalUserProfile.getInstance().findConversationByBookId(book.getBookId());
                 if (conversationId == null) {
                     conversation = new Conversation(book);
                     conversationId = conversation.getConversationId();
+                } else {
+                    setOnConversationLoadedListener();
                 }
-            } else {
-                setOnConversationLoadedListener();
             }
         } else {
             if (peer == null) {
@@ -245,13 +278,12 @@ public class SingleChatActivity extends AppCompatActivity {
 
     private boolean unsetOnLocalProfileLoadedListener() {
         if (this.localProfileListener != null) {
-            UserProfile.unsetOnProfileLoadedListener(this.localProfileListener);
+            LocalUserProfile.unsetOnProfileLoadedListener(this.localProfileListener);
             this.localProfileListener = null;
             return true;
         }
         return false;
     }
-
 
     private void setOnProfileLoadedListener() {
 
@@ -318,5 +350,30 @@ public class SingleChatActivity extends AppCompatActivity {
             return true;
         }
         return false;
+    }
+
+    @Override
+    protected void openDialog(@NonNull DialogID dialogId, boolean dialogPersist) {
+        super.openDialog(dialogId, dialogPersist);
+
+        Dialog dialogInstance = null;
+        switch (dialogId) {
+            case DIALOG_ARCHIVED:
+                dialogInstance = new AlertDialog.Builder(this)
+                        .setTitle(R.string.conversation_archived)
+                        .setMessage(R.string.conversation_archived_message)
+                        .setPositiveButton(android.R.string.ok, (dialog, which) -> finish())
+                        .setCancelable(false)
+                        .show();
+                break;
+        }
+
+        if (dialogInstance != null) {
+            this.setDialogInstance(dialogInstance);
+        }
+    }
+
+    public enum DialogID {
+        DIALOG_ARCHIVED,
     }
 }

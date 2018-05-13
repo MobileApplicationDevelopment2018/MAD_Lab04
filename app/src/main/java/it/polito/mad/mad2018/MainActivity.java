@@ -38,6 +38,7 @@ import java.util.Arrays;
 
 import it.polito.mad.mad2018.chat.ChatIDService;
 import it.polito.mad.mad2018.chat.MyChatsFragment;
+import it.polito.mad.mad2018.data.LocalUserProfile;
 import it.polito.mad.mad2018.data.UserProfile;
 import it.polito.mad.mad2018.explore.ExploreFragment;
 import it.polito.mad.mad2018.library.LibraryFragment;
@@ -87,7 +88,7 @@ public class MainActivity extends AppCompatActivityDialog<MainActivity.DialogID>
         super.onStart();
 
         if (firebaseAuth.getCurrentUser() != null) {
-            if (UserProfile.localInstance == null) {
+            if (LocalUserProfile.getInstance() == null) {
                 setOnProfileLoadedListener();
             } else {
                 findViewById(R.id.main_loading).setVisibility(View.GONE);
@@ -142,7 +143,7 @@ public class MainActivity extends AppCompatActivityDialog<MainActivity.DialogID>
                 break;
 
             case R.id.nav_profile:
-                this.replaceFragment(ShowProfileFragment.newInstance(UserProfile.localInstance, true));
+                this.replaceFragment(ShowProfileFragment.newInstance(LocalUserProfile.getInstance(), true));
                 break;
 
             case R.id.nav_chat:
@@ -191,17 +192,17 @@ public class MainActivity extends AppCompatActivityDialog<MainActivity.DialogID>
 
             case RC_EDIT_PROFILE:
                 if (resultCode == RESULT_OK) {
-                    UserProfile.localInstance = (UserProfile) data.getSerializableExtra(UserProfile.PROFILE_INFO_KEY);
-                    UserProfile.localInstance.postCommit();
+                    LocalUserProfile.setInstance((LocalUserProfile) data.getSerializableExtra(UserProfile.PROFILE_INFO_KEY));
+                    LocalUserProfile.getInstance().postCommit();
                     updateNavigationView(); // Need to update the drawer information
-                    this.replaceFragment(ShowProfileFragment.newInstance(UserProfile.localInstance, true), true);
+                    this.replaceFragment(ShowProfileFragment.newInstance(LocalUserProfile.getInstance(), true), true);
                 }
                 break;
 
             case RC_EDIT_PROFILE_WELCOME:
                 if (resultCode == RESULT_OK) {
-                    UserProfile.localInstance = (UserProfile) data.getSerializableExtra(UserProfile.PROFILE_INFO_KEY);
-                    UserProfile.localInstance.postCommit();
+                    LocalUserProfile.setInstance((LocalUserProfile) data.getSerializableExtra(UserProfile.PROFILE_INFO_KEY));
+                    LocalUserProfile.getInstance().postCommit();
                     updateNavigationView(); // Need to update the drawer information
                 }
                 break;
@@ -224,7 +225,7 @@ public class MainActivity extends AppCompatActivityDialog<MainActivity.DialogID>
         TextView username = header.findViewById(R.id.nh_username);
         TextView email = header.findViewById(R.id.nh_email);
 
-        UserProfile localProfile = UserProfile.localInstance;
+        UserProfile localProfile = LocalUserProfile.getInstance();
 
         username.setText(localProfile.getUsername());
         email.setText(localProfile.getEmail());
@@ -277,8 +278,9 @@ public class MainActivity extends AppCompatActivityDialog<MainActivity.DialogID>
     }
 
     private void onSignOut() {
-        UserProfile.localInstance = null;
+        LocalUserProfile.setInstance(null);
         removeCurrentFragment();
+        ChatIDService.deleteToken();
         signIn();
     }
 
@@ -293,7 +295,7 @@ public class MainActivity extends AppCompatActivityDialog<MainActivity.DialogID>
     private void setOnProfileLoadedListener() {
         this.openDialog(DialogID.DIALOG_LOADING, false);
 
-        this.profileListener = UserProfile.setOnProfileLoadedListener(new ValueEventListener() {
+        this.profileListener = LocalUserProfile.setOnProfileLoadedListener(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
                 if (!unsetOnProfileLoadedListener()) {
@@ -305,12 +307,12 @@ public class MainActivity extends AppCompatActivityDialog<MainActivity.DialogID>
                 if (data == null) {
                     completeRegistration();
                 } else {
-                    UserProfile.localInstance = new UserProfile(data);
+                    LocalUserProfile.setInstance(new LocalUserProfile(data));
                     updateNavigationView();
                     showDefaultFragment();
-                    showToast(getString(R.string.sign_in_welcome_back) + " " + UserProfile.localInstance.getUsername());
+                    showToast(getString(R.string.sign_in_welcome_back) + " " + LocalUserProfile.getInstance().getUsername());
                 }
-                ChatIDService.uploadToken(UserProfile.localInstance, FirebaseInstanceId.getInstance().getToken());
+                ChatIDService.uploadToken(LocalUserProfile.getInstance(), FirebaseInstanceId.getInstance().getToken());
             }
 
             @Override
@@ -325,7 +327,7 @@ public class MainActivity extends AppCompatActivityDialog<MainActivity.DialogID>
 
     private boolean unsetOnProfileLoadedListener() {
         if (this.profileListener != null) {
-            UserProfile.unsetOnProfileLoadedListener(this.profileListener);
+            LocalUserProfile.unsetOnProfileLoadedListener(this.profileListener);
             this.profileListener = null;
             return true;
         }
@@ -335,10 +337,10 @@ public class MainActivity extends AppCompatActivityDialog<MainActivity.DialogID>
     private void completeRegistration() {
 
         assert firebaseAuth.getCurrentUser() != null;
-        UserProfile.localInstance = new UserProfile(firebaseAuth.getCurrentUser());
-        UserProfile.localInstance.saveToFirebase(this.getResources());
+        LocalUserProfile.setInstance(new LocalUserProfile(firebaseAuth.getCurrentUser()));
+        LocalUserProfile.getInstance().saveToFirebase();
 
-        String message = getString(R.string.sign_in_welcome) + " " + UserProfile.localInstance.getUsername();
+        String message = getString(R.string.sign_in_welcome) + " " + LocalUserProfile.getInstance().getUsername();
         Snackbar.make(findViewById(R.id.main_coordinator_layout), message, Snackbar.LENGTH_LONG)
                 .setAction(R.string.edit_profile, v -> showEditProfileActivity(RC_EDIT_PROFILE_WELCOME))
                 .show();
@@ -402,7 +404,7 @@ public class MainActivity extends AppCompatActivityDialog<MainActivity.DialogID>
 
     private void showEditProfileActivity(int code) {
         Intent toEditProfile = new Intent(getApplicationContext(), EditProfileActivity.class);
-        toEditProfile.putExtra(UserProfile.PROFILE_INFO_KEY, UserProfile.localInstance);
+        toEditProfile.putExtra(UserProfile.PROFILE_INFO_KEY, LocalUserProfile.getInstance());
         startActivityForResult(toEditProfile, code);
     }
 

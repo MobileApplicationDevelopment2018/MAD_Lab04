@@ -35,11 +35,11 @@ public class ChatAdapter extends FirebaseRecyclerAdapter<Conversation, ChatAdapt
     private final OnItemClickListener onItemClickListener;
     private final OnItemCountChangedListener onItemCountChangedListener;
 
-    private Map<String, UserProfile> userProfiles;
-    private Map<String, Pair<ValueEventListener, Set<Integer>>> profileListeners;
+    private final Map<String, UserProfile> userProfiles;
+    private final Map<String, Pair<ValueEventListener, Set<Integer>>> profileListeners;
 
-    private Map<String, Book> books;
-    private Map<String, Pair<ValueEventListener, Set<Integer>>> bookListeners;
+    private final Map<String, Book> books;
+    private final Map<String, Pair<ValueEventListener, Set<Integer>>> bookListeners;
 
 
     ChatAdapter(@NonNull FirebaseRecyclerOptions<Conversation> options,

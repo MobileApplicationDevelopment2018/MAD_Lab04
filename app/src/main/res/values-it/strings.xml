@@ -9,7 +9,7 @@
     <string name="book_details">Dettagli del libro</string>
 
     <string name="profile_picture">Immagine profilo</string>
-    <string name="send_email">Invia e-mail</string>
+    <string name="write_to_owner">Scrivi al proprietario</string>
     <string name="show_location">Visualizza città</string>
     <string name="owned_books">Libri posseduti</string>
     <string name="show_owned_book">Visualizza i libri posseduti</string>
@@ -150,4 +150,10 @@
     <string name="no_archived_chats">Ancora nessuna chat archiviata</string>
     <string name="no_messages">No messages</string>
     <string name="loading">Caricamento…</string>
+    <string name="send_message">Invia messaggio</string>
+    <string name="message">Messaggio</string>
+    <string name="archive_conversation">Archivio la conversazione?</string>
+    <string name="archive_conversation_message">Se confermi, né tu né l\'altro utente potrete inviare altri messaggi in questa conversazione.</string>
+    <string name="conversation_archived">Conversazione archiviata</string>
+    <string name="conversation_archived_message">La conversazione è stata archiviata dall\'altro utente.</string>
 </resources>

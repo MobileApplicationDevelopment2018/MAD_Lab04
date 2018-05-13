@@ -24,6 +24,7 @@ import com.bumptech.glide.signature.ObjectKey;
 import java.util.Locale;
 
 import it.polito.mad.mad2018.R;
+import it.polito.mad.mad2018.data.LocalUserProfile;
 import it.polito.mad.mad2018.data.UserProfile;
 import it.polito.mad.mad2018.utils.GlideApp;
 import it.polito.mad.mad2018.utils.GlideRequest;
@@ -66,7 +67,7 @@ public class ShowProfileFragment extends Fragment {
         isEditable = getArguments().getBoolean(EDITABLE_KEY);
         assert profile != null;
 
-        getActivity().setTitle(profile.isLocal()
+        getActivity().setTitle(profile instanceof LocalUserProfile
                 ? getString(R.string.my_profile)
                 : getString(R.string.user_profile, profile.getUsername()));
 
@@ -86,9 +87,14 @@ public class ShowProfileFragment extends Fragment {
 
         // ShowBooks button
         final ImageButton showBooksButton = getView().findViewById(R.id.sp_show_books);
-        showBooksButton.setVisibility((profile.isLocal() || onShowOwnedBooksClickListener == null)
+        showBooksButton.setVisibility((profile instanceof LocalUserProfile || onShowOwnedBooksClickListener == null)
                 ? View.INVISIBLE : View.VISIBLE);
         showBooksButton.setOnClickListener(v -> onShowOwnedBooksClickListener.OnShowOwnedBooksClick(profile));
+
+        if (!(profile instanceof LocalUserProfile)) {
+            getView().findViewById(R.id.sp_card_books)
+                    .setOnClickListener(v -> onShowOwnedBooksClickListener.OnShowOwnedBooksClick(profile));
+        }
     }
 
     @Override

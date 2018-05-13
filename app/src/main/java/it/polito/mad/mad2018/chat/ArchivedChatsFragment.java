@@ -2,6 +2,7 @@ package it.polito.mad.mad2018.chat;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.LinearLayoutManager;
@@ -19,7 +20,11 @@ import it.polito.mad.mad2018.data.Conversation;
 import it.polito.mad.mad2018.data.UserProfile;
 
 public class ArchivedChatsFragment extends Fragment {
+
     private ChatAdapter adapter;
+
+    private Handler handlerUpdateMessageTime;
+    private Runnable runnableUpdateMessageTime;
 
     public ArchivedChatsFragment() { /* Required empty public constructor */ }
 
@@ -59,11 +64,22 @@ public class ArchivedChatsFragment extends Fragment {
     public void onStart() {
         super.onStart();
         adapter.startListening();
+
+        runnableUpdateMessageTime = () -> {
+            adapter.notifyDataSetChanged();
+            handlerUpdateMessageTime.postDelayed(runnableUpdateMessageTime, Conversation.UPDATE_TIME);
+        };
+        handlerUpdateMessageTime = new Handler();
+        handlerUpdateMessageTime.postDelayed(runnableUpdateMessageTime, Conversation.UPDATE_TIME);
     }
 
     @Override
     public void onStop() {
         super.onStop();
         adapter.stopListening();
+
+        if (handlerUpdateMessageTime != null && runnableUpdateMessageTime != null) {
+            handlerUpdateMessageTime.removeCallbacks(runnableUpdateMessageTime);
+        }
     }
 }

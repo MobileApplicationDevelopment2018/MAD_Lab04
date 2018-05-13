@@ -28,7 +28,7 @@ import java.util.List;
 
 import it.polito.mad.mad2018.R;
 import it.polito.mad.mad2018.data.Book;
-import it.polito.mad.mad2018.data.UserProfile;
+import it.polito.mad.mad2018.data.LocalUserProfile;
 
 public class FilterResultsFragment extends DialogFragment {
     public static final String TAG = "FilterResultsFragment";
@@ -94,7 +94,7 @@ public class FilterResultsFragment extends DialogFragment {
                         if(filter.attribute != null) {
                             searcher.addNumericRefinement(new NumericRefinement(seekBarDescription.attribute, NumericRefinement.OPERATOR_GE, seekBarDescription.value));
                         } else if (filter.name.equals(DISTANCE_NAME)) {
-                            double[] position = UserProfile.localInstance.getCoordinates();
+                            double[] position = LocalUserProfile.getInstance().getCoordinates();
                             Query query = searcher.getQuery().setAroundLatLng(new AbstractQuery.LatLng(position[0], position[1]));
                             if (filter.value < ((SeekBarDescription) filter).max) {
                                 query.setAroundRadius((int) filter.value);

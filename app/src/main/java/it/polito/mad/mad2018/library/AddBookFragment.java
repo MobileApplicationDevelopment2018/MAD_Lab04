@@ -44,7 +44,7 @@ import it.polito.mad.mad2018.BuildConfig;
 import it.polito.mad.mad2018.R;
 import it.polito.mad.mad2018.barcodereader.BarcodeCaptureActivity;
 import it.polito.mad.mad2018.data.Book;
-import it.polito.mad.mad2018.data.UserProfile;
+import it.polito.mad.mad2018.data.LocalUserProfile;
 import it.polito.mad.mad2018.utils.FileUtilities;
 import it.polito.mad.mad2018.utils.FragmentDialog;
 import it.polito.mad.mad2018.utils.IsbnQuery;
@@ -347,7 +347,7 @@ public class AddBookFragment extends FragmentDialog<AddBookFragment.DialogID>
         book.setHasImage(picture != null);
 
         OnSuccessListener<Object> onSuccess = v -> {
-            book.saveToFirebase(UserProfile.localInstance);
+            book.saveToFirebase(LocalUserProfile.getInstance());
             Toast.makeText(getContext(), getResources().getString(R.string.add_book_saved), Toast.LENGTH_LONG).show();
             clearViews(true);
 
@@ -361,14 +361,14 @@ public class AddBookFragment extends FragmentDialog<AddBookFragment.DialogID>
                     Toast.LENGTH_LONG).show();
         };
 
-        book.saveToAlgolia(UserProfile.localInstance, (obj, e) -> {
+        book.saveToAlgolia(LocalUserProfile.getInstance(), (obj, e) -> {
             if (e != null) {
                 onFailure.onFailure(e);
                 return;
             }
 
             if (picture != null) {
-                book.savePictureToFirebase(UserProfile.localInstance, picture.getPicture(), picture.getThumbnail())
+                book.savePictureToFirebase(LocalUserProfile.getInstance(), picture.getPicture(), picture.getThumbnail())
                         .addOnCompleteListener(v -> closeDialog())
                         .addOnSuccessListener(onSuccess)
                         .addOnFailureListener(onFailure)
@@ -453,6 +453,7 @@ public class AddBookFragment extends FragmentDialog<AddBookFragment.DialogID>
                 android.R.layout.simple_spinner_item, Book.BookConditions.values());
 
         spinConditions.setAdapter(adapter);
+        spinConditions.setSelection(adapter.getCount() - 2);
     }
 
     private boolean checkMandatoryFieldsInput(String isbn, String title, String[] authors) {

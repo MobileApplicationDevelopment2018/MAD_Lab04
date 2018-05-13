@@ -48,6 +48,7 @@ import java.io.File;
 import it.polito.mad.mad2018.BuildConfig;
 import it.polito.mad.mad2018.MainActivity;
 import it.polito.mad.mad2018.R;
+import it.polito.mad.mad2018.data.LocalUserProfile;
 import it.polito.mad.mad2018.data.UserProfile;
 import it.polito.mad.mad2018.utils.AppCompatActivityDialog;
 import it.polito.mad.mad2018.utils.FileUtilities;
@@ -72,7 +73,7 @@ public class EditProfileActivity extends AppCompatActivityDialog<EditProfileActi
     private EditText username, biography;
     private AutoCompleteTextView location;
 
-    private UserProfile originalProfile, currentProfile;
+    private LocalUserProfile originalProfile, currentProfile;
     private int imageViewHeight;
 
     private boolean isCommitting;
@@ -97,13 +98,13 @@ public class EditProfileActivity extends AppCompatActivityDialog<EditProfileActi
         // Initialize the Profile instances
         if (savedInstanceState != null) {
             // If they was saved, load them
-            originalProfile = (UserProfile) savedInstanceState.getSerializable(ORIGINAL_PROFILE_KEY);
-            currentProfile = (UserProfile) savedInstanceState.getSerializable(CURRENT_PROFILE_KEY);
+            originalProfile = (LocalUserProfile) savedInstanceState.getSerializable(ORIGINAL_PROFILE_KEY);
+            currentProfile = (LocalUserProfile) savedInstanceState.getSerializable(CURRENT_PROFILE_KEY);
             isCommitting = savedInstanceState.getBoolean(IS_COMMITTING_KEY, false);
         } else {
             // Otherwise, obtain them through the intent
-            originalProfile = (UserProfile) this.getIntent().getSerializableExtra(UserProfile.PROFILE_INFO_KEY);
-            currentProfile = new UserProfile(originalProfile);
+            originalProfile = (LocalUserProfile) this.getIntent().getSerializableExtra(UserProfile.PROFILE_INFO_KEY);
+            currentProfile = new LocalUserProfile(originalProfile);
             isCommitting = false;
         }
 
@@ -335,8 +336,7 @@ public class EditProfileActivity extends AppCompatActivityDialog<EditProfileActi
 
                         OnSuccessListener<Object> onSuccess = t -> {
                             isCommitting = false;
-                            currentProfile.saveToFirebase(this.getResources())
-                                    .addOnFailureListener(onFailure);
+                            currentProfile.saveToFirebase().addOnFailureListener(onFailure);
                             this.onChangesCommitted();
                         };
 
@@ -354,8 +354,7 @@ public class EditProfileActivity extends AppCompatActivityDialog<EditProfileActi
 
                 // Otherwise, there is no need for the asynchronous pre-processing phase
                 else {
-                    currentProfile.saveToFirebase(this.getResources())
-                            .addOnFailureListener(onFailure);
+                    currentProfile.saveToFirebase().addOnFailureListener(onFailure);
                     if (currentProfile.imageUpdated(originalProfile) && !currentProfile.hasProfilePicture()) {
                         currentProfile.deleteProfilePictureFromFirebase();
                     }
@@ -403,7 +402,7 @@ public class EditProfileActivity extends AppCompatActivityDialog<EditProfileActi
                 .into(imageView);
     }
 
-    private void updateProfileInfo(UserProfile profile) {
+    private void updateProfileInfo(LocalUserProfile profile) {
         String usernameStr = username.getText().toString();
         String biographyStr = biography.getText().toString();
 

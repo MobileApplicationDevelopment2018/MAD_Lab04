@@ -32,12 +32,11 @@ import java.util.List;
 import it.polito.mad.mad2018.R;
 import it.polito.mad.mad2018.data.Book;
 import it.polito.mad.mad2018.data.Constants;
-import it.polito.mad.mad2018.data.UserProfile;
+import it.polito.mad.mad2018.data.LocalUserProfile;
 import it.polito.mad.mad2018.library.BookInfoActivity;
 import it.polito.mad.mad2018.widgets.MapWidget;
 
 public class ExploreFragment extends Fragment {
-    private static final String TAG = "ExploreFragment";
 
     private final static int LIST_ID = 0;
     private final static int MAP_ID = 1;
@@ -71,7 +70,7 @@ public class ExploreFragment extends Fragment {
             searchQuery = savedInstanceState.getString(SEARCH_QUERY_STRING);
         }
 
-        double[] position = UserProfile.localInstance.getCoordinates();
+        double[] position = LocalUserProfile.getInstance().getCoordinates();
         searcher.getQuery().setAroundLatLng(new AbstractQuery.LatLng(position[0], position[1]))
                 .setAroundRadius(Query.RADIUS_ALL);
 

@@ -14,8 +14,6 @@ import com.firebase.ui.database.FirebaseRecyclerOptions;
 import com.google.android.gms.tasks.Task;
 import com.google.android.gms.tasks.Tasks;
 import com.google.api.services.books.model.Volume;
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
@@ -60,6 +58,7 @@ public class Book implements Serializable {
     public static final int BOOK_THUMBNAIL_SIZE = 256;
 
     private static final String FIREBASE_BOOKS_KEY = "books";
+    private static final String FIREBASE_DELETED_BOOK_KEY = "deleted";
     private static final String FIREBASE_STORAGE_BOOKS_FOLDER = "books";
     private static final String FIREBASE_STORAGE_IMAGE_NAME = "picture";
     private static final String FIREBASE_STORAGE_THUMBNAIL_NAME = "thumbnail";
@@ -138,10 +137,6 @@ public class Book implements Serializable {
                 .child(FIREBASE_BOOKS_KEY)
                 .child(bookId)
                 .removeEventListener(listener);
-    }
-
-    public static FirebaseRecyclerOptions<Book> getBooksLocalUser() {
-        return getBooksByUser(UserProfile.getCurrentUserId());
     }
 
     public static FirebaseRecyclerOptions<Book> getBooksByUser(@NonNull String userId) {
@@ -250,7 +245,7 @@ public class Book implements Serializable {
         return this.data.bookInfo.hasImage ? this.getBookThumbnailReference() : null;
     }
 
-    public Task<?> saveToFirebase(@NonNull UserProfile owner) {
+    public Task<?> saveToFirebase(@NonNull LocalUserProfile owner) {
 
         this.data.uid = owner.getUserId();
 
@@ -282,19 +277,16 @@ public class Book implements Serializable {
         return Tasks.whenAllSuccess(tasks);
     }
 
-    public void deleteFromFirebase(@NonNull UserProfile owner) {
+    public void deleteFromFirebase(@NonNull LocalUserProfile owner) {
 
+        this.data.deleted = true;
         FirebaseDatabase.getInstance().getReference()
                 .child(FIREBASE_BOOKS_KEY)
                 .child(bookId)
-                .removeValue();
+                .child(FIREBASE_DELETED_BOOK_KEY)
+                .setValue(true);
 
         owner.removeBook(this.bookId);
-
-        if (this.data.bookInfo.hasImage) {
-            this.getBookPictureReference().delete();
-            this.getBookThumbnailReference().delete();
-        }
     }
 
     public void saveToAlgolia(@NonNull UserProfile owner,
@@ -332,10 +324,12 @@ public class Book implements Serializable {
     @SuppressWarnings({"WeakerAccess", "CanBeFinal"})
     public static class Data implements Serializable {
         public String uid;
+        public boolean deleted;
         public BookInfo bookInfo;
 
         public Data() {
             this.uid = null;
+            this.deleted = false;
             this.bookInfo = new BookInfo();
         }
 
@@ -419,7 +413,8 @@ public class Book implements Serializable {
 
         @Override
         public String toString() {
-            return MAD2018Application.applicationContext.getString(getStringId(this.value));
+            return MAD2018Application.getApplicationContextStatic()
+                    .getString(getStringId(this.value));
         }
 
         @Override

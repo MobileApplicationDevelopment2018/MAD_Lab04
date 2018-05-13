@@ -6,6 +6,8 @@ import android.text.format.DateUtils;
 import com.firebase.ui.database.FirebaseRecyclerOptions;
 import com.google.android.gms.tasks.Task;
 import com.google.android.gms.tasks.Tasks;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.Exclude;
 import com.google.firebase.database.FirebaseDatabase;
@@ -13,15 +15,12 @@ import com.google.firebase.database.ServerValue;
 import com.google.firebase.database.ValueEventListener;
 
 import java.io.Serializable;
-import java.text.DateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import it.polito.mad.mad2018.MAD2018Application;
 import it.polito.mad.mad2018.utils.Utilities;
 
 public class Conversation implements Serializable {
@@ -29,33 +28,33 @@ public class Conversation implements Serializable {
     public static final String CONVERSATION_KEY = "conversation_key";
     public static final String CONVERSATION_ID_KEY = "conversation_id_key";
 
+    public static final long UPDATE_TIME = 30000;
+
     private static final String FIREBASE_CONVERSATIONS_KEY = "conversations";
     private static final String FIREBASE_MESSAGES_KEY = "messages";
-
+    private static final String FIREBASE_OWNER_KEY = "owner";
+    private static final String FIREBASE_PEER_KEY = "peer";
+    private static final String FIREBASE_UNREAD_MESSAGES_KEY = "unreadMessages";
+    private static final String FIREBASE_FLAGS_KEY = "flags";
+    private static final String FIREBASE_FLAG_ARCHIVED_KEY = "archived";
     private static final String FIREBASE_CONVERSATION_ORDER_BY_KEY = "timestamp";
-
-    private static UserProfile localUser;
-
-    public String getConversationId() {
-        return conversationId;
-    }
 
     private final String conversationId;
     private final Conversation.Data data;
 
+    private transient ValueEventListener archivedListener;
+
     public Conversation(@NonNull Book book) {
-        Conversation.localUser = UserProfile.localInstance;
         this.conversationId = Conversation.generateConversationId();
 
         this.data = new Data();
         this.data.bookId = book.getBookId();
-        this.data.owner = book.getOwnerId();
-        this.data.peer = Conversation.localUser.getUserId();
+        this.data.owner.uid = book.getOwnerId();
+        this.data.peer.uid = LocalUserProfile.getInstance().getUserId();
     }
 
     public Conversation(@NonNull String conversationId,
                         @NonNull Data data) {
-        Conversation.localUser = UserProfile.localInstance;
         this.conversationId = conversationId;
         this.data = data;
     }
@@ -83,11 +82,11 @@ public class Conversation implements Serializable {
     }
 
     public static FirebaseRecyclerOptions<Conversation> getActiveConversations() {
-        return Conversation.getConversations(UserProfile.getActiveConversationsReference());
+        return Conversation.getConversations(LocalUserProfile.getActiveConversationsReference());
     }
 
     public static FirebaseRecyclerOptions<Conversation> getArchivedConversations() {
-        return Conversation.getConversations(UserProfile.getArchivedConversationsReference());
+        return Conversation.getConversations(LocalUserProfile.getArchivedConversationsReference());
     }
 
     public static ValueEventListener setOnConversationLoadedListener(@NonNull String conversationId,
@@ -108,7 +107,51 @@ public class Conversation implements Serializable {
                 .removeEventListener(listener);
     }
 
-    public static FirebaseRecyclerOptions<Message> getMessages(String conversationId) {
+    public void startArchivedListener(@NonNull OnConversationArchivedListener listener) {
+
+        archivedListener = new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                Object archived = dataSnapshot.getValue();
+                if (archived instanceof Boolean && !Conversation.this.data.flags.archived
+                        && (boolean) archived) {
+                    Conversation.this.data.flags.archived = true;
+                    listener.onConversationArchived();
+                }
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+                /* Do nothing */
+            }
+        };
+
+        FirebaseDatabase.getInstance().getReference()
+                .child(FIREBASE_CONVERSATIONS_KEY)
+                .child(conversationId)
+                .child(FIREBASE_FLAGS_KEY)
+                .child(FIREBASE_FLAG_ARCHIVED_KEY)
+                .addValueEventListener(archivedListener);
+    }
+
+    public void stopArchivedListener() {
+
+        if (archivedListener != null) {
+            FirebaseDatabase.getInstance().getReference()
+                    .child(FIREBASE_CONVERSATIONS_KEY)
+                    .child(conversationId)
+                    .child(FIREBASE_FLAGS_KEY)
+                    .child(FIREBASE_FLAG_ARCHIVED_KEY)
+                    .removeEventListener(archivedListener);
+            archivedListener = null;
+        }
+    }
+
+    public String getConversationId() {
+        return conversationId;
+    }
+
+    public FirebaseRecyclerOptions<Message> getMessages() {
         DatabaseReference dataRef = FirebaseDatabase.getInstance().getReference()
                 .child(FIREBASE_CONVERSATIONS_KEY)
                 .child(conversationId)
@@ -119,31 +162,25 @@ public class Conversation implements Serializable {
                         snapshot -> {
                             Conversation.Data.Message data = snapshot.getValue(Conversation.Data.Message.class);
                             assert data != null;
-                            if (Conversation.localUser == null)
-                                localUser = UserProfile.localInstance;
-                            return new Conversation.Message(data, Conversation.localUser.getUserId());
+                            return new Conversation.Message(data);
                         })
                 .build();
-    }
-
-    public FirebaseRecyclerOptions<Message> getMessages() {
-        return Conversation.getMessages(this.conversationId);
     }
 
     public boolean isNew() {
         return this.data.messages.size() == 0;
     }
 
-    public boolean isBookOwner() {
-        return Utilities.equals(Conversation.localUser.getUserId(), this.data.owner);
+    public boolean isArchived() {
+        return this.data.flags.archived;
     }
 
-    public String getBookOwnerId() {
-        return this.data.owner;
+    private boolean isBookOwner() {
+        return LocalUserProfile.isLocal(this.data.owner.uid);
     }
 
     public String getPeerUserId() {
-        return isBookOwner() ? this.data.peer : this.data.owner;
+        return isBookOwner() ? this.data.peer.uid : this.data.owner.uid;
     }
 
     public String getBookId() {
@@ -151,11 +188,22 @@ public class Conversation implements Serializable {
     }
 
     public int getUnreadMessagesCount() {
-        return Conversation.localUser.getUnreadMessagesCount(conversationId);
+        return this.isBookOwner()
+                ? this.data.owner.unreadMessages
+                : this.data.peer.unreadMessages;
     }
 
     public void setMessagesAllRead() {
-        Conversation.localUser.setMessagesAllRead(conversationId);
+        String user_key = this.isBookOwner() ? FIREBASE_OWNER_KEY : FIREBASE_PEER_KEY;
+        Conversation.Data.User user = this.isBookOwner() ? this.data.owner : this.data.peer;
+
+        user.unreadMessages = 0;
+        FirebaseDatabase.getInstance().getReference()
+                .child(FIREBASE_CONVERSATIONS_KEY)
+                .child(conversationId)
+                .child(user_key)
+                .child(FIREBASE_UNREAD_MESSAGES_KEY)
+                .setValue(0);
     }
 
     public Message getLastMessage() {
@@ -164,7 +212,7 @@ public class Conversation implements Serializable {
         }
 
         String last = Collections.max(this.data.messages.keySet());
-        return new Message(this.data.messages.get(last), Conversation.localUser.getUserId());
+        return new Message(this.data.messages.get(last));
     }
 
     public Task<?> sendMessage(@NonNull String text) {
@@ -179,7 +227,7 @@ public class Conversation implements Serializable {
 
         if (this.data.messages.size() == 0) {
             tasks.add(conversationReference.setValue(this.data));
-            tasks.add(Conversation.localUser.addConversation(this.conversationId, this.data.bookId));
+            tasks.add(LocalUserProfile.getInstance().addConversation(this.conversationId, this.data.bookId));
         }
 
         DatabaseReference messageReference = conversationReference
@@ -191,16 +239,38 @@ public class Conversation implements Serializable {
         return Tasks.whenAllSuccess(tasks);
     }
 
+    public Task<?> archiveConversation() {
+        this.data.flags.archived = true;
+
+        List<Task<?>> tasks = new ArrayList<>();
+
+        tasks.add(FirebaseDatabase.getInstance().getReference()
+                .child(FIREBASE_CONVERSATIONS_KEY)
+                .child(conversationId)
+                .child(FIREBASE_FLAGS_KEY)
+                .child(FIREBASE_FLAG_ARCHIVED_KEY)
+                .setValue(true));
+
+        Task<?> task = LocalUserProfile.getInstance().archiveConversation(conversationId);
+        if (task != null) {
+            tasks.add(task);
+        }
+
+        return Tasks.whenAllSuccess(tasks);
+    }
+
+    public interface OnConversationArchivedListener {
+        void onConversationArchived();
+    }
 
     public static class Message implements Serializable {
 
         private final String localUserId;
         private final Conversation.Data.Message message;
 
-        private Message(@NonNull Conversation.Data.Message message,
-                        @NonNull String localUserId) {
+        private Message(@NonNull Conversation.Data.Message message) {
 
-            this.localUserId = localUserId;
+            this.localUserId = LocalUserProfile.getInstance().getUserId();
             this.message = message;
         }
 
@@ -215,7 +285,7 @@ public class Conversation implements Serializable {
         public String getDateTime() {
             long now = System.currentTimeMillis();
             long messageTimeStamp = message.getTimestamp();
-            if(messageTimeStamp > now) {
+            if (messageTimeStamp > now) {
                 now = messageTimeStamp;
             }
             return DateUtils.getRelativeTimeSpanString(messageTimeStamp, now, DateUtils.MINUTE_IN_MILLIS).toString();
@@ -227,25 +297,27 @@ public class Conversation implements Serializable {
     public static class Data implements Serializable {
 
         public String bookId;
-        public String owner;
-        public String peer;
+        public User owner;
+        public User peer;
         public Conversation.Data.Flags flags;
 
         public Map<String, Message> messages;
 
         public Data() {
             this.bookId = null;
-            this.owner = null;
-            this.peer = null;
+            this.owner = new User();
+            this.peer = new User();
             this.flags = new Conversation.Data.Flags();
             this.messages = new HashMap<>();
         }
 
         private static class Flags implements Serializable {
             public boolean archived;
+            public boolean bookDeleted;
 
             public Flags() {
                 this.archived = false;
+                this.bookDeleted = false;
             }
         }
 
@@ -265,6 +337,16 @@ public class Conversation implements Serializable {
                 return this.timestamp instanceof Long
                         ? (long) this.timestamp
                         : System.currentTimeMillis();
+            }
+        }
+
+        private static class User implements Serializable {
+            public String uid;
+            public int unreadMessages;
+
+            public User() {
+                this.uid = null;
+                this.unreadMessages = 0;
             }
         }
     }

@@ -17,6 +17,7 @@ import com.firebase.ui.database.FirebaseRecyclerOptions;
 
 import it.polito.mad.mad2018.R;
 import it.polito.mad.mad2018.data.Book;
+import it.polito.mad.mad2018.data.LocalUserProfile;
 import it.polito.mad.mad2018.data.UserProfile;
 
 public class MyBooksFragment extends Fragment {
@@ -28,7 +29,7 @@ public class MyBooksFragment extends Fragment {
     public MyBooksFragment() { /* Required empty public constructor */ }
 
     public static MyBooksFragment newInstance() {
-        return MyBooksFragment.newInstance(UserProfile.localInstance);
+        return MyBooksFragment.newInstance(LocalUserProfile.getInstance());
     }
 
     public static MyBooksFragment newInstance(@NonNull UserProfile profile) {
@@ -50,7 +51,7 @@ public class MyBooksFragment extends Fragment {
         assert profile != null;
 
         final FloatingActionButton floatingActionButton = view.findViewById(R.id.fmb_add_book);
-        floatingActionButton.setVisibility(profile.isLocal() ? View.VISIBLE : View.GONE);
+        floatingActionButton.setVisibility(profile instanceof LocalUserProfile ? View.VISIBLE : View.GONE);
         floatingActionButton.setOnClickListener(v -> {
             Intent toAddBook = new Intent(getActivity(), AddBookActivity.class);
             startActivity(toAddBook);
@@ -70,7 +71,7 @@ public class MyBooksFragment extends Fragment {
             Intent toBookInfo = new Intent(getActivity(), BookInfoActivity.class);
             toBookInfo.putExtra(Book.BOOK_KEY, model);
             toBookInfo.putExtra(BookInfoFragment.BOOK_SHOW_OWNER_KEY, false);
-            toBookInfo.putExtra(BookInfoFragment.BOOK_DELETABLE_KEY, profile.isLocal());
+            toBookInfo.putExtra(BookInfoFragment.BOOK_DELETABLE_KEY, profile instanceof LocalUserProfile);
             startActivity(toBookInfo);
         }, onItemCountChangedListener);
         recyclerView.setAdapter(adapter);
@@ -83,7 +84,7 @@ public class MyBooksFragment extends Fragment {
         super.onActivityCreated(savedInstanceState);
 
         assert getActivity() != null;
-        getActivity().setTitle(profile.isLocal()
+        getActivity().setTitle(profile instanceof LocalUserProfile
                 ? getString(R.string.my_library)
                 : getString(R.string.user_library, profile.getUsername()));
     }

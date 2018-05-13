@@ -9,7 +9,7 @@
     <string name="book_details">Book details</string>
 
     <string name="profile_picture">Profile picture</string>
-    <string name="send_email">Send e-mail</string>
+    <string name="write_to_owner">Write to the owner</string>
     <string name="show_location">Show location</string>
     <string name="owned_books">Owned books</string>
     <string name="show_owned_book">Show owned books</string>
@@ -169,4 +169,10 @@
 
     <string name="notifications_admin_channel_name">Global channel</string>
     <string name="notifications_admin_channel_description">Notifications sent from the app admin</string>
+    <string name="send_message">Send message</string>
+    <string name="message">Message</string>
+    <string name="archive_conversation">Archive the conversation?</string>
+    <string name="archive_conversation_message">If you confirm, neither you nor the peer will be able to send further messages in this conversation.</string>
+    <string name="conversation_archived">Archived conversation</string>
+    <string name="conversation_archived_message">The conversation has been archived by the peer user.</string>
 </resources>

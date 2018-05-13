@@ -1,123 +1,53 @@
 package it.polito.mad.mad2018.data;
 
 import android.content.res.Resources;
-import android.os.AsyncTask;
 import android.support.annotation.NonNull;
 import android.util.Base64;
 
-import com.algolia.search.saas.CompletionHandler;
 import com.google.android.gms.location.places.Place;
-import com.google.android.gms.tasks.Task;
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.auth.UserInfo;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 import com.google.firebase.storage.FirebaseStorage;
-import com.google.firebase.storage.StorageMetadata;
 import com.google.firebase.storage.StorageReference;
 
-import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.ByteArrayOutputStream;
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import it.polito.mad.mad2018.MAD2018Application;
 import it.polito.mad.mad2018.R;
-import it.polito.mad.mad2018.utils.PictureUtilities;
 import it.polito.mad.mad2018.utils.Utilities;
 
 public class UserProfile implements Serializable {
 
     public static final String PROFILE_INFO_KEY = "profile_info_key";
 
-    private static final String FIREBASE_USERS_KEY = "users";
-    private static final String FIREBASE_BOOKS_KEY = "books";
-    private static final String FIREBASE_OWNED_BOOKS_KEY = "ownedBooks";
-    private static final String FIREBASE_CONVERSATIONS_KEY = "conversations";
-    private static final String FIREBASE_ACTIVE_CONVERSATIONS_KEY = "active";
-    private static final String FIREBASE_ARCHIVED_CONVERSATIONS_KEY = "archived";
-    private static final String FIREBASE_UNREAD_MESSAGES_KEY = "unreadMessages";
+    static final String FIREBASE_USERS_KEY = "users";
+    static final String FIREBASE_BOOKS_KEY = "books";
+    static final String FIREBASE_OWNED_BOOKS_KEY = "ownedBooks";
+    static final String FIREBASE_CONVERSATIONS_KEY = "conversations";
+    static final String FIREBASE_ACTIVE_CONVERSATIONS_KEY = "active";
+    static final String FIREBASE_ARCHIVED_CONVERSATIONS_KEY = "archived";
 
-    private static final String FIREBASE_PROFILE_KEY = "profile";
+    static final String FIREBASE_PROFILE_KEY = "profile";
     private static final String FIREBASE_STORAGE_USERS_FOLDER = "users";
-    private static final String FIREBASE_STORAGE_IMAGE_NAME = "profile";
+    static final String FIREBASE_STORAGE_IMAGE_NAME = "profile";
 
-    private static final int PROFILE_PICTURE_SIZE = 1024;
-    private static final int PROFILE_PICTURE_THUMBNAIL_SIZE = 64;
-    private static final int PROFILE_PICTURE_QUALITY = 50;
+    static final int PROFILE_PICTURE_SIZE = 1024;
+    static final int PROFILE_PICTURE_THUMBNAIL_SIZE = 64;
+    static final int PROFILE_PICTURE_QUALITY = 50;
 
-    public static UserProfile localInstance;
-
-    private final String uid;
-    private final Data data;
-    private boolean localImageToBeDeleted;
-    private String localImagePath;
-
-    public UserProfile(@NonNull Data data) {
-        this(getCurrentUserId(), data);
-    }
+    final String uid;
+    final Data data;
 
     public UserProfile(@NonNull String uid, @NonNull Data data) {
         this.uid = uid;
         this.data = data;
-        this.localImageToBeDeleted = false;
-        this.localImagePath = null;
-        trimFields(MAD2018Application.applicationContext.getResources());
-    }
-
-    public UserProfile(@NonNull UserProfile other) {
-        this.uid = other.uid;
-        this.data = new Data(other.data);
-        this.localImageToBeDeleted = false;
-        this.localImagePath = null;
-    }
-
-    public UserProfile(@NonNull FirebaseUser user) {
-        this.uid = user.getUid();
-        this.data = new Data();
-        this.localImageToBeDeleted = false;
-        this.localImagePath = null;
-
-        this.data.profile.email = user.getEmail();
-        this.data.profile.username = user.getDisplayName();
-
-        for (UserInfo profile : user.getProviderData()) {
-            if (this.data.profile.username == null && profile.getDisplayName() != null) {
-                this.data.profile.username = profile.getDisplayName();
-            }
-        }
-
-        if (this.data.profile.username == null) {
-            this.data.profile.username = getUsernameFromEmail(this.data.profile.email);
-
-        }
-
-        this.data.profile.location.latitude = 45.116177;
-        this.data.profile.location.longitude = 7.742615;
-        this.data.profile.location.name = MAD2018Application.applicationContext.getString(R.string.default_city_turin);
-    }
-
-    private static String getUsernameFromEmail(@NonNull String email) {
-        return email.substring(0, email.indexOf('@'));
-    }
-
-    public static String getCurrentUserId() {
-        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
-        assert currentUser != null;
-
-        return currentUser.getUid();
-    }
-
-    public static ValueEventListener setOnProfileLoadedListener(@NonNull ValueEventListener listener) {
-        return setOnProfileLoadedListener(getCurrentUserId(), listener);
+        trimFields();
     }
 
     public static ValueEventListener setOnProfileLoadedListener(@NonNull String userId,
@@ -127,10 +57,6 @@ public class UserProfile implements Serializable {
                 .child(FIREBASE_USERS_KEY)
                 .child(userId)
                 .addValueEventListener(listener);
-    }
-
-    public static void unsetOnProfileLoadedListener(@NonNull ValueEventListener listener) {
-        unsetOnProfileLoadedListener(getCurrentUserId(), listener);
     }
 
     public static void unsetOnProfileLoadedListener(@NonNull String userId,
@@ -150,59 +76,10 @@ public class UserProfile implements Serializable {
                 .child(FIREBASE_OWNED_BOOKS_KEY);
     }
 
-    private static DatabaseReference getConversationsReference() {
-        return FirebaseDatabase.getInstance().getReference()
-                .child(FIREBASE_USERS_KEY)
-                .child(UserProfile.getCurrentUserId())
-                .child(FIREBASE_CONVERSATIONS_KEY);
-    }
-
-    static DatabaseReference getActiveConversationsReference() {
-        return UserProfile.getConversationsReference()
-                .child(FIREBASE_ACTIVE_CONVERSATIONS_KEY);
-    }
-
-    static DatabaseReference getArchivedConversationsReference() {
-        return UserProfile.getConversationsReference()
-                .child(FIREBASE_ARCHIVED_CONVERSATIONS_KEY);
-    }
-
     static StorageReference getStorageFolderReference(@NonNull String userId) {
         return FirebaseStorage.getInstance().getReference()
                 .child(FIREBASE_STORAGE_USERS_FOLDER)
                 .child(userId);
-    }
-
-    public static boolean isLocal(String uid) {
-        return Utilities.equals(uid, UserProfile.getCurrentUserId());
-    }
-
-    public void setProfilePicture(String path, boolean toBeDeleted) {
-        this.data.profile.hasProfilePicture = path != null;
-        this.data.profile.profilePictureLastModified = System.currentTimeMillis();
-        this.data.profile.profilePictureThumbnail = null;
-        localImageToBeDeleted = toBeDeleted;
-        localImagePath = path;
-    }
-
-    public void resetProfilePicture() {
-        setProfilePicture(null, false);
-    }
-
-    public void update(@NonNull String username, @NonNull String biography) {
-        this.data.profile.username = username;
-        this.data.profile.biography = biography;
-    }
-
-    public void update(Place place) {
-        this.data.profile.location = place == null
-                ? new Data.Location()
-                : new Data.Location(place);
-    }
-
-    private void trimFields(@NonNull Resources resources) {
-        this.data.profile.username = Utilities.trimString(this.data.profile.username, resources.getInteger(R.integer.max_length_username));
-        this.data.profile.biography = Utilities.trimString(this.data.profile.biography, resources.getInteger(R.integer.max_length_biography));
     }
 
     public String getUserId() {
@@ -221,19 +98,19 @@ public class UserProfile implements Serializable {
         return this.data.profile.location.name;
     }
 
-    public double[] getCoordinates() {
-        return new double[]{this.data.profile.location.latitude, this.data.profile.location.longitude};
-    }
-
     JSONObject getLocationAlgolia() {
         return this.data.profile.location.toAlgoliaGeoLoc();
     }
 
     public String getLocationOrDefault() {
         return getLocation() == null
-                ? MAD2018Application.applicationContext.getString(R.string.default_city)
+                ? MAD2018Application.getApplicationContextStatic().getString(R.string.default_city)
                 : getLocation();
 
+    }
+
+    public double[] getCoordinates() {
+        return new double[]{this.data.profile.location.latitude, this.data.profile.location.longitude};
     }
 
     public String getBiography() {
@@ -249,11 +126,9 @@ public class UserProfile implements Serializable {
     }
 
     public Object getProfilePictureReference() {
-        return this.localImagePath == null
-                ? this.hasProfilePicture()
+        return this.hasProfilePicture()
                 ? this.getProfilePictureReferenceFirebase()
-                : null
-                : this.getLocalImagePath();
+                : null;
     }
 
     public byte[] getProfilePictureThumbnail() {
@@ -262,35 +137,9 @@ public class UserProfile implements Serializable {
                 : Base64.decode(this.data.profile.profilePictureThumbnail, Base64.DEFAULT);
     }
 
-    public void setProfilePictureThumbnail(ByteArrayOutputStream thumbnail) {
-        this.data.profile.profilePictureThumbnail =
-                Base64.encodeToString(thumbnail.toByteArray(), Base64.DEFAULT);
-    }
-
     private StorageReference getProfilePictureReferenceFirebase() {
         return UserProfile.getStorageFolderReference(this.uid)
                 .child(FIREBASE_STORAGE_IMAGE_NAME);
-    }
-
-    public String getLocalImagePath() {
-        return this.localImagePath;
-    }
-
-    public boolean isLocalImageToBeDeleted() {
-        return localImageToBeDeleted;
-    }
-
-    public boolean profileUpdated(UserProfile other) {
-        return !Utilities.equals(this.getEmail(), other.getEmail()) ||
-                !Utilities.equals(this.getUsername(), other.getUsername()) ||
-                !Utilities.equals(this.getLocation(), other.getLocation()) ||
-                !Utilities.equalsNullOrWhiteSpace(this.getBiography(), other.getBiography()) ||
-                imageUpdated(other);
-    }
-
-    public boolean imageUpdated(UserProfile other) {
-        return this.hasProfilePicture() != other.hasProfilePicture() ||
-                !Utilities.equals(this.localImagePath, other.localImagePath);
     }
 
     public float getRating() {
@@ -313,136 +162,10 @@ public class UserProfile implements Serializable {
         return this.data.statistics.toBeReturnedBooks;
     }
 
-    public boolean isLocal() {
-        return UserProfile.isLocal(this.uid);
-    }
-
-    public Task<Void> saveToFirebase(@NonNull Resources resources) {
-        this.trimFields(resources);
-
-        return FirebaseDatabase.getInstance().getReference()
-                .child(FIREBASE_USERS_KEY)
-                .child(this.uid)
-                .child(FIREBASE_PROFILE_KEY)
-                .setValue(this.data.profile);
-    }
-
-    public void deleteProfilePictureFromFirebase() {
-        getProfilePictureReferenceFirebase().delete();
-    }
-
-    public AsyncTask<Void, Void, PictureUtilities.CompressedImage> processProfilePictureAsync(
-            @NonNull PictureUtilities.CompressImageAsync.OnCompleteListener onCompleteListener) {
-
-        return new PictureUtilities.CompressImageAsync(
-                localImagePath, PROFILE_PICTURE_SIZE, PROFILE_PICTURE_THUMBNAIL_SIZE,
-                PROFILE_PICTURE_QUALITY, onCompleteListener)
-                .execute();
-    }
-
-    public Task<?> uploadProfilePictureToFirebase(@NonNull ByteArrayOutputStream picture) {
-        StorageMetadata metadata = new StorageMetadata.Builder()
-                .setContentType(PictureUtilities.IMAGE_CONTENT_TYPE_UPLOAD)
-                .build();
-
-        return getProfilePictureReferenceFirebase()
-                .putBytes(picture.toByteArray(), metadata);
-    }
-
-    public void postCommit() {
-        this.localImageToBeDeleted = false;
-        this.localImagePath = null;
-    }
-
-    public Task<?> addBook(String bookId) {
-        this.data.books.ownedBooks.put(bookId, true);
-        return FirebaseDatabase.getInstance().getReference()
-                .child(FIREBASE_USERS_KEY)
-                .child(getCurrentUserId())
-                .child(FIREBASE_BOOKS_KEY)
-                .child(FIREBASE_OWNED_BOOKS_KEY)
-                .child(bookId)
-                .setValue(true);
-    }
-
-    public void removeBook(String bookId) {
-        this.data.books.ownedBooks.remove(bookId);
-        FirebaseDatabase.getInstance().getReference()
-                .child(FIREBASE_USERS_KEY)
-                .child(getCurrentUserId())
-                .child(FIREBASE_BOOKS_KEY)
-                .child(FIREBASE_OWNED_BOOKS_KEY)
-                .child(bookId)
-                .removeValue();
-    }
-
-    public void updateAlgoliaGeoLoc(UserProfile other, @NonNull CompletionHandler completionHandler) {
-
-        if ((other != null && Utilities.equals(this.data.profile.location, other.data.profile.location)) ||
-                this.data.books.ownedBooks.size() == 0) {
-            completionHandler.requestCompleted(null, null);
-            return;
-        }
-
-        JSONObject geoloc = this.getLocationAlgolia();
-        List<JSONObject> bookUpdates = new ArrayList<>();
-
-        for (String bookId : this.data.books.ownedBooks.keySet()) {
-            try {
-                bookUpdates.add(new JSONObject()
-                        .put(Book.ALGOLIA_GEOLOC_KEY, geoloc)
-                        .put(Book.ALGOLIA_BOOK_ID_KEY, bookId));
-            } catch (JSONException e) { /* Do nothing */ }
-        }
-
-        Book.AlgoliaBookIndex.getInstance()
-                .partialUpdateObjectsAsync(new JSONArray(bookUpdates), completionHandler);
-    }
-
-    Task<?> addConversation(@NonNull String conversationId, @NonNull String bookId) {
-        Data.Conversations.Conversation conversation = new Data.Conversations.Conversation(bookId);
-        this.data.conversations.active.put(conversationId, conversation);
-        return UserProfile.getActiveConversationsReference()
-                .child(conversationId)
-                .setValue(conversation);
-    }
-
-    public String findConversationByBookId(@NonNull String bookId) {
-        for (Map.Entry<String, UserProfile.Data.Conversations.Conversation> entry :
-                this.data.conversations.active.entrySet()) {
-            if (Utilities.equals(entry.getValue().bookId, bookId)) {
-                return entry.getKey();
-            }
-        }
-        return null;
-    }
-
-    int getUnreadMessagesCount(@NonNull String conversationId) {
-        UserProfile.Data.Conversations.Conversation conversation =
-                this.data.conversations.active.get(conversationId);
-        if (conversation == null) {
-            conversation = this.data.conversations.archived.get(conversationId);
-        }
-        return conversation == null ? 0 : conversation.unreadMessages;
-    }
-
-    void setMessagesAllRead(@NonNull String conversationId) {
-        if (this.data.conversations.active.containsKey(conversationId)) {
-            this.data.conversations.active.get(conversationId).unreadMessages = 0;
-            UserProfile.getActiveConversationsReference()
-                    .child(conversationId)
-                    .child(FIREBASE_UNREAD_MESSAGES_KEY)
-                    .setValue(0);
-            return;
-        }
-
-        if (this.data.conversations.archived.containsKey(conversationId)) {
-            this.data.conversations.archived.get(conversationId).unreadMessages = 0;
-            UserProfile.getArchivedConversationsReference()
-                    .child(conversationId)
-                    .child(FIREBASE_UNREAD_MESSAGES_KEY)
-                    .setValue(0);
-        }
+    void trimFields() {
+        Resources resources = MAD2018Application.getApplicationContextStatic().getResources();
+        this.data.profile.username = Utilities.trimString(this.data.profile.username, resources.getInteger(R.integer.max_length_username));
+        this.data.profile.biography = Utilities.trimString(this.data.profile.biography, resources.getInteger(R.integer.max_length_biography));
     }
 
     /* Fields need to be public to enable Firebase to access them */
@@ -468,7 +191,7 @@ public class UserProfile implements Serializable {
             this.conversations = new Conversations(other.conversations);
         }
 
-        private static class Profile implements Serializable {
+        protected static class Profile implements Serializable {
 
             public String email;
             public String username;
@@ -499,7 +222,7 @@ public class UserProfile implements Serializable {
             }
         }
 
-        private static class Statistics implements Serializable {
+        protected static class Statistics implements Serializable {
             public float rating;
             public int lentBooks;
             public int borrowedBooks;
@@ -520,7 +243,7 @@ public class UserProfile implements Serializable {
             }
         }
 
-        private static class Books implements Serializable {
+        protected static class Books implements Serializable {
             public Map<String, Boolean> ownedBooks;
 
             public Books() {
@@ -532,7 +255,7 @@ public class UserProfile implements Serializable {
             }
         }
 
-        private static class Conversations implements Serializable {
+        protected static class Conversations implements Serializable {
             public Map<String, Conversation> active;
             public Map<String, Conversation> archived;
 
@@ -546,26 +269,22 @@ public class UserProfile implements Serializable {
                 this.archived = other.archived;
             }
 
-            private static class Conversation implements Serializable {
+            protected static class Conversation implements Serializable {
                 public String bookId;
-                public int unreadMessages;
                 public long timestamp;
 
                 public Conversation() {
-                    this.bookId = null;
-                    this.unreadMessages = 0;
-                    this.timestamp = 0;
+                    this(null);
                 }
 
                 public Conversation(String bookId) {
                     this.bookId = bookId;
-                    this.unreadMessages = 0;
                     this.timestamp = 0;
                 }
             }
         }
 
-        private static class Location implements Serializable {
+        protected static class Location implements Serializable {
             public String name;
             public double latitude;
             public double longitude;
