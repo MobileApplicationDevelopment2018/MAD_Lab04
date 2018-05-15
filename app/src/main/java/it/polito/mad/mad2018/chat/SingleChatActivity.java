@@ -2,6 +2,7 @@ package it.polito.mad.mad2018.chat;
 
 import android.app.AlertDialog;
 import android.app.Dialog;
+import android.content.Context;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.annotation.NonNull;
@@ -10,7 +11,9 @@ import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.TextView;
@@ -24,11 +27,14 @@ import it.polito.mad.mad2018.data.Book;
 import it.polito.mad.mad2018.data.Conversation;
 import it.polito.mad.mad2018.data.LocalUserProfile;
 import it.polito.mad.mad2018.data.UserProfile;
+import it.polito.mad.mad2018.profile.ShowProfileFragment;
 import it.polito.mad.mad2018.utils.AppCompatActivityDialog;
 import it.polito.mad.mad2018.utils.TextWatcherUtilities;
 import it.polito.mad.mad2018.utils.Utilities;
 
 public class SingleChatActivity extends AppCompatActivityDialog<SingleChatActivity.DialogID> {
+
+    private static final String PROFILE_SHOWN_KEY = "profile_shown_key";
 
     private Conversation conversation;
     private UserProfile peer;
@@ -46,6 +52,8 @@ public class SingleChatActivity extends AppCompatActivityDialog<SingleChatActivi
 
     private Handler handlerUpdateMessageTime;
     private Runnable runnableUpdateMessageTime;
+
+    private boolean profileShown;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -66,11 +74,13 @@ public class SingleChatActivity extends AppCompatActivityDialog<SingleChatActivi
             peer = (UserProfile) savedInstanceState.getSerializable(UserProfile.PROFILE_INFO_KEY);
             book = (Book) savedInstanceState.getSerializable(Book.BOOK_KEY);
             conversationId = savedInstanceState.getString(Conversation.CONVERSATION_ID_KEY);
+            profileShown = savedInstanceState.getBoolean(PROFILE_SHOWN_KEY);
         } else {
             conversation = (Conversation) getIntent().getSerializableExtra(Conversation.CONVERSATION_KEY);
             peer = (UserProfile) getIntent().getSerializableExtra(UserProfile.PROFILE_INFO_KEY);
             book = (Book) getIntent().getSerializableExtra(Book.BOOK_KEY);
             conversationId = getIntent().getStringExtra(Conversation.CONVERSATION_ID_KEY);
+            profileShown = false;
         }
 
         findViews();
@@ -100,6 +110,7 @@ public class SingleChatActivity extends AppCompatActivityDialog<SingleChatActivi
         outState.putSerializable(UserProfile.PROFILE_INFO_KEY, peer);
         outState.putSerializable(Book.BOOK_KEY, book);
         outState.putSerializable(Conversation.CONVERSATION_ID_KEY, conversationId);
+        outState.putBoolean(PROFILE_SHOWN_KEY, profileShown);
     }
 
     private void setupMessages() {
@@ -135,10 +146,39 @@ public class SingleChatActivity extends AppCompatActivityDialog<SingleChatActivi
     }
 
     @Override
+    public void onBackPressed() {
+        if (profileShown) {
+            profileShown = false;
+            this.invalidateOptionsMenu();
+            onStart();
+            setTitle(peer.getUsername());
+        }
+        super.onBackPressed();
+    }
+
+    @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         MenuInflater inflater = getMenuInflater();
         inflater.inflate(R.menu.menu_single_chat, menu);
         return super.onCreateOptionsMenu(menu);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.sc_show_peer_profile:
+                assert getSupportFragmentManager() != null;
+                profileShown = true;
+                hideSoftKeyboard();
+                getSupportFragmentManager().beginTransaction()
+                        .replace(R.id.fragment, ShowProfileFragment.newInstance(peer, false))
+                        .addToBackStack(null)
+                        .commit();
+                updateViewsVisibility();
+                return true;
+            default:
+                return super.onOptionsItemSelected(item);
+        }
     }
 
     @Override
@@ -160,6 +200,7 @@ public class SingleChatActivity extends AppCompatActivityDialog<SingleChatActivi
         if (conversation != null && !conversation.isNew()) {
             setupMessages();
         }
+        showSoftKeyboard(editTextMessage);
     }
 
     @Override
@@ -190,6 +231,15 @@ public class SingleChatActivity extends AppCompatActivityDialog<SingleChatActivi
     }
 
     private void updateViewsVisibility() {
+        if (profileShown) {
+            findViewById(R.id.chat_main_layout).setVisibility(View.GONE);
+            findViewById(R.id.chat_loading).setVisibility(View.GONE);
+            findViewById(R.id.chat_line).setVisibility(View.GONE);
+            editTextMessage.setVisibility(View.GONE);
+            buttonSend.setVisibility(View.GONE);
+            return;
+        }
+
         findViewById(R.id.chat_main_layout).setVisibility(conversation == null ? View.GONE : View.VISIBLE);
         findViewById(R.id.chat_loading).setVisibility(conversation == null ? View.VISIBLE : View.GONE);
 
@@ -359,6 +409,24 @@ public class SingleChatActivity extends AppCompatActivityDialog<SingleChatActivi
             return true;
         }
         return false;
+    }
+
+    private void hideSoftKeyboard() {
+        View view = this.getCurrentFocus();
+        if (view != null) {
+            InputMethodManager inputMethodManager =
+                    (InputMethodManager) this.getSystemService(Context.INPUT_METHOD_SERVICE);
+            if (inputMethodManager != null) {
+                inputMethodManager.hideSoftInputFromWindow(view.getWindowToken(), 0);
+            }
+        }
+    }
+
+    private void showSoftKeyboard(View view) {
+        InputMethodManager inputMethodManager = (InputMethodManager) getSystemService(INPUT_METHOD_SERVICE);
+        view.requestFocus();
+        assert inputMethodManager != null;
+        inputMethodManager.showSoftInput(view, 0);
     }
 
     @Override
