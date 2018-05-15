@@ -1,8 +1,10 @@
 package it.polito.mad.mad2018.chat;
 
 import android.content.Context;
+import android.graphics.Typeface;
 import android.support.annotation.NonNull;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.util.Pair;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -220,6 +222,7 @@ public class ChatAdapter extends FirebaseRecyclerAdapter<Conversation, ChatAdapt
         private final TextView message;
         private final TextView date;
         private final ImageView bookPicture;
+        private final TextView newMessagesCount;
 
         private Conversation conversation;
         private UserProfile peer;
@@ -234,6 +237,7 @@ public class ChatAdapter extends FirebaseRecyclerAdapter<Conversation, ChatAdapt
             this.date = view.findViewById(R.id.cl_chat_item_date);
             this.bookTitle = view.findViewById(R.id.cl_chat_item_book_title);
             this.bookPicture = view.findViewById(R.id.cl_chat_item_book_image);
+            this.newMessagesCount = view.findViewById(R.id.cl_chat_new_messages_count);
 
             view.setOnClickListener(v -> listener.onClick(v, conversation, peer, book));
         }
@@ -257,6 +261,16 @@ public class ChatAdapter extends FirebaseRecyclerAdapter<Conversation, ChatAdapt
 
             this.peerName.setText(peer == null ? context.getString(R.string.loading) : peer.getUsername());
             this.bookTitle.setText(book == null ? context.getString(R.string.loading) : book.getTitle());
+
+            Log.d("TAG", "" + conversation.getUnreadMessagesCount());
+            if (conversation.getUnreadMessagesCount() != 0) {
+                this.newMessagesCount.setVisibility(View.VISIBLE);
+                this.newMessagesCount.setText(String.valueOf(conversation.getUnreadMessagesCount()));
+                this.message.setTypeface(message.getTypeface(), Typeface.BOLD);
+            } else {
+                this.message.setTypeface(null, Typeface.NORMAL);
+                this.newMessagesCount.setVisibility(View.GONE);
+            }
         }
     }
 }
