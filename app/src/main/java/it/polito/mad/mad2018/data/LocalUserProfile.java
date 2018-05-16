@@ -350,4 +350,18 @@ public class LocalUserProfile extends UserProfile {
             onConversationsUpdatedListener = null;
         }
     }
+
+    public Task<?> deleteConversation(String conversationId) {
+        Data.Conversations.Conversation conversation = this.data.conversations.archived.remove(conversationId);
+        if (conversation == null) {
+            return null;
+        }
+        List<Task<?>> tasks = new ArrayList<>();
+
+        tasks.add(LocalUserProfile.getArchivedConversationsReference()
+                .child(conversationId)
+                .removeValue());
+
+        return Tasks.whenAllSuccess(tasks);
+    }
 }

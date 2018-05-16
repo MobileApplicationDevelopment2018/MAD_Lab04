@@ -259,6 +259,22 @@ public class Conversation implements Serializable {
         return Tasks.whenAllSuccess(tasks);
     }
 
+    public Task<?> deleteConversation() {
+        List<Task<?>> tasks = new ArrayList<>();
+
+        tasks.add(FirebaseDatabase.getInstance().getReference()
+                .child(FIREBASE_CONVERSATIONS_KEY)
+                .child(conversationId)
+                .removeValue());
+
+        Task<?> task = LocalUserProfile.getInstance().deleteConversation(conversationId);
+        if (task != null) {
+            tasks.add(task);
+        }
+
+        return Tasks.whenAllSuccess(tasks);
+    }
+
     public interface OnConversationArchivedListener {
         void onConversationArchived();
     }
