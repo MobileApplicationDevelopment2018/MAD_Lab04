@@ -200,7 +200,7 @@ public class SingleChatActivity extends AppCompatActivityDialog<SingleChatActivi
         super.onStart();
 
         if (LocalUserProfile.getInstance() != null) {
-            init();
+            afterLocalProfileLoaded();
         } else {
             setOnLocalProfileLoadedListener();
         }
@@ -209,11 +209,6 @@ public class SingleChatActivity extends AppCompatActivityDialog<SingleChatActivi
             adapter.startListening();
         }
 
-        updateViewsVisibility();
-        editTextMessage.setEnabled(conversation != null);
-        if (conversation != null && !conversation.isNew()) {
-            setupMessages();
-        }
         showSoftKeyboard(editTextMessage);
     }
 
@@ -275,15 +270,7 @@ public class SingleChatActivity extends AppCompatActivityDialog<SingleChatActivi
                 Conversation.Data data = dataSnapshot.getValue(Conversation.Data.class);
                 if (data != null) {
                     conversation = new Conversation(conversationId, data);
-                    if (peer == null) {
-                        setOnProfileLoadedListener();
-                    }
-                    if (book == null) {
-                        setOnBookLoadedListener();
-                    }
-
-                    updateViewsVisibility();
-                    setupMessages();
+                    afterConversationLoaded();
                 }
             }
 
@@ -317,7 +304,7 @@ public class SingleChatActivity extends AppCompatActivityDialog<SingleChatActivi
                         UserProfile.Data data = dataSnapshot.getValue(UserProfile.Data.class);
                         if (data != null) {
                             LocalUserProfile.setInstance(new LocalUserProfile(data));
-                            init();
+                            afterLocalProfileLoaded();
                         }
                     }
 
@@ -328,25 +315,38 @@ public class SingleChatActivity extends AppCompatActivityDialog<SingleChatActivi
                 });
     }
 
-    private void init() {
+    private void afterLocalProfileLoaded() {
         if (conversation == null) {
             if (conversationId == null) {
                 conversationId = LocalUserProfile.getInstance().findConversationByBookId(book.getBookId());
                 if (conversationId == null) {
                     conversation = new Conversation(book);
                     conversationId = conversation.getConversationId();
+                    afterConversationLoaded();
                 } else {
                     setOnConversationLoadedListener();
                 }
+            } else {
+                setOnConversationLoadedListener();
             }
         } else {
-            if (peer == null) {
-                setOnProfileLoadedListener();
-            }
-            if (book == null) {
-                setOnBookLoadedListener();
-            }
+            afterConversationLoaded();
         }
+    }
+
+    private void afterConversationLoaded() {
+        if (peer == null) {
+            setOnProfileLoadedListener();
+        }
+        if (book == null) {
+            setOnBookLoadedListener();
+        }
+
+        updateViewsVisibility();
+        if (conversation != null && !conversation.isNew()) {
+            setupMessages();
+        }
+        editTextMessage.setEnabled(conversation != null);
     }
 
     private boolean unsetOnLocalProfileLoadedListener() {
