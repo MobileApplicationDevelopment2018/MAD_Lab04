@@ -27,12 +27,14 @@ import it.polito.mad.mad2018.data.Book;
 import it.polito.mad.mad2018.data.Conversation;
 import it.polito.mad.mad2018.data.LocalUserProfile;
 import it.polito.mad.mad2018.data.UserProfile;
+import it.polito.mad.mad2018.library.MyBooksFragment;
 import it.polito.mad.mad2018.profile.ShowProfileFragment;
 import it.polito.mad.mad2018.utils.AppCompatActivityDialog;
 import it.polito.mad.mad2018.utils.TextWatcherUtilities;
 import it.polito.mad.mad2018.utils.Utilities;
 
-public class SingleChatActivity extends AppCompatActivityDialog<SingleChatActivity.DialogID> {
+public class SingleChatActivity extends AppCompatActivityDialog<SingleChatActivity.DialogID>
+        implements ShowProfileFragment.OnShowOwnedBooksClickListener {
 
     private static final String PROFILE_SHOWN_KEY = "profile_shown_key";
 
@@ -448,6 +450,14 @@ public class SingleChatActivity extends AppCompatActivityDialog<SingleChatActivi
         if (dialogInstance != null) {
             this.setDialogInstance(dialogInstance);
         }
+    }
+
+    @Override
+    public void OnShowOwnedBooksClick(UserProfile profile) {
+        getSupportFragmentManager().beginTransaction()
+                .replace(R.id.fragment, MyBooksFragment.newInstance(profile))
+                .addToBackStack(null)
+                .commit();
     }
 
     public enum DialogID {
