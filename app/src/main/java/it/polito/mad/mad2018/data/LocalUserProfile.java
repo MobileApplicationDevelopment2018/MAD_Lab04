@@ -303,6 +303,13 @@ public class LocalUserProfile extends UserProfile {
         return Tasks.whenAllSuccess(tasks);
     }
 
+    public Task<?> deleteConversation(String conversationId) {
+        this.data.conversations.archived.remove(conversationId);
+        return LocalUserProfile.getArchivedConversationsReference()
+                .child(conversationId)
+                .removeValue();
+    }
+
     public String findConversationByBookId(@NonNull String bookId) {
         for (Map.Entry<String, LocalUserProfile.Data.Conversations.Conversation> entry :
                 this.data.conversations.active.entrySet()) {
@@ -349,19 +356,5 @@ public class LocalUserProfile extends UserProfile {
                     .removeEventListener(onConversationsUpdatedListener);
             onConversationsUpdatedListener = null;
         }
-    }
-
-    public Task<?> deleteConversation(String conversationId) {
-        Data.Conversations.Conversation conversation = this.data.conversations.archived.remove(conversationId);
-        if (conversation == null) {
-            return null;
-        }
-        List<Task<?>> tasks = new ArrayList<>();
-
-        tasks.add(LocalUserProfile.getArchivedConversationsReference()
-                .child(conversationId)
-                .removeValue());
-
-        return Tasks.whenAllSuccess(tasks);
     }
 }

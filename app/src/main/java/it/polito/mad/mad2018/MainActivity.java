@@ -4,8 +4,10 @@ import android.app.Dialog;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.annotation.StringRes;
 import android.support.design.widget.NavigationView;
@@ -57,6 +59,7 @@ public class MainActivity extends AppCompatActivityDialog<MainActivity.DialogID>
     private static final int RC_EDIT_PROFILE_WELCOME = 6;
 
     private static final String FRAGMENT_TAG = "main_fragment";
+    private static final String PREFERENCES_FIRST_TIME = "preferences_first_time";
 
     private FirebaseAuth firebaseAuth;
     private ValueEventListener profileListener;
@@ -76,11 +79,19 @@ public class MainActivity extends AppCompatActivityDialog<MainActivity.DialogID>
 
         if (savedInstanceState == null && !Utilities.isNetworkConnected(this)) {
             openDialog(DialogID.DIALOG_NO_CONNECTION, true);
+            return;
         }
         firebaseAuth = FirebaseAuth.getInstance();
 
         NavigationView navigationView = findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
+
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
+        if (preferences.getBoolean(PREFERENCES_FIRST_TIME, true)) {
+            preferences.edit().putBoolean(PREFERENCES_FIRST_TIME, false).apply();
+            Intent onboardingIntent = new Intent(getApplicationContext(), OnboardingActivity.class);
+            startActivity(onboardingIntent);
+        }
     }
 
     @Override
