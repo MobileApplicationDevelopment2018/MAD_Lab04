@@ -37,6 +37,7 @@ public class SingleChatActivity extends AppCompatActivityDialog<SingleChatActivi
         implements ShowProfileFragment.OnShowOwnedBooksClickListener {
 
     private static final String PROFILE_SHOWN_KEY = "profile_shown_key";
+    private static final String LIBRARY_SHOWN_KEY = "library_shown_key";
 
     private Conversation conversation;
     private UserProfile peer;
@@ -56,6 +57,7 @@ public class SingleChatActivity extends AppCompatActivityDialog<SingleChatActivi
     private Runnable runnableUpdateMessageTime;
 
     private boolean profileShown;
+    private boolean libraryShown;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -77,12 +79,14 @@ public class SingleChatActivity extends AppCompatActivityDialog<SingleChatActivi
             book = (Book) savedInstanceState.getSerializable(Book.BOOK_KEY);
             conversationId = savedInstanceState.getString(Conversation.CONVERSATION_ID_KEY);
             profileShown = savedInstanceState.getBoolean(PROFILE_SHOWN_KEY);
+            libraryShown = savedInstanceState.getBoolean(LIBRARY_SHOWN_KEY);
         } else {
             conversation = (Conversation) getIntent().getSerializableExtra(Conversation.CONVERSATION_KEY);
             peer = (UserProfile) getIntent().getSerializableExtra(UserProfile.PROFILE_INFO_KEY);
             book = (Book) getIntent().getSerializableExtra(Book.BOOK_KEY);
             conversationId = getIntent().getStringExtra(Conversation.CONVERSATION_ID_KEY);
             profileShown = false;
+            libraryShown = false;
         }
 
         findViews();
@@ -113,6 +117,7 @@ public class SingleChatActivity extends AppCompatActivityDialog<SingleChatActivi
         outState.putSerializable(Book.BOOK_KEY, book);
         outState.putSerializable(Conversation.CONVERSATION_ID_KEY, conversationId);
         outState.putBoolean(PROFILE_SHOWN_KEY, profileShown);
+        outState.putBoolean(LIBRARY_SHOWN_KEY, libraryShown);
     }
 
     private void setupMessages() {
@@ -149,19 +154,26 @@ public class SingleChatActivity extends AppCompatActivityDialog<SingleChatActivi
 
     @Override
     public void onBackPressed() {
-        if (profileShown) {
+        if (profileShown && !libraryShown) {
             profileShown = false;
             this.invalidateOptionsMenu();
             onStart();
             setTitle(peer.getUsername());
         }
+        if (libraryShown)
+            libraryShown = false;
+
         super.onBackPressed();
     }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        MenuInflater inflater = getMenuInflater();
-        inflater.inflate(R.menu.menu_single_chat, menu);
+        menu.clear();
+        if (!profileShown && !libraryShown) {
+            MenuInflater inflater = getMenuInflater();
+            inflater.inflate(R.menu.menu_single_chat, menu);
+            return super.onCreateOptionsMenu(menu);
+        }
         return super.onCreateOptionsMenu(menu);
     }
 
@@ -454,6 +466,7 @@ public class SingleChatActivity extends AppCompatActivityDialog<SingleChatActivi
 
     @Override
     public void OnShowOwnedBooksClick(UserProfile profile) {
+        libraryShown = true;
         getSupportFragmentManager().beginTransaction()
                 .replace(R.id.fragment, MyBooksFragment.newInstance(profile))
                 .addToBackStack(null)
