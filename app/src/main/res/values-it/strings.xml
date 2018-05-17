@@ -42,7 +42,7 @@
     <string name="nav_header_desc">Header della finestra id navigazione</string>
 
     <string name="number_zero">0</string>
-    <string name="activity_main">Main</string>
+    <string name="activity_main">NoFAndroid</string>
     <string name="my_library">Libreria</string>
     <string name="user_library">La libreria di %1$s</string>
     <string name="anonymous">Non ancora loggato</string>

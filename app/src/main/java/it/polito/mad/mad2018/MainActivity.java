@@ -77,14 +77,16 @@ public class MainActivity extends AppCompatActivityDialog<MainActivity.DialogID>
         drawer.addDrawerListener(toggle);
         toggle.syncState();
 
-        if (savedInstanceState == null && !Utilities.isNetworkConnected(this)) {
-            openDialog(DialogID.DIALOG_NO_CONNECTION, true);
-            return;
-        }
+
         firebaseAuth = FirebaseAuth.getInstance();
 
         NavigationView navigationView = findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
+
+        if (savedInstanceState == null && !Utilities.isNetworkConnected(this)) {
+            openDialog(DialogID.DIALOG_NO_CONNECTION, true);
+            return;
+        }
 
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
         if (preferences.getBoolean(PREFERENCES_FIRST_TIME, true)) {
